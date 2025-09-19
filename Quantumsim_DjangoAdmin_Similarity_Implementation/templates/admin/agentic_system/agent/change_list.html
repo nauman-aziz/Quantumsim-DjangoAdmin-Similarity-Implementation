@@ -1,0 +1,102 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  /* two-column layout: main list + sidebar */
+  .qs-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 1100px) {
+    .qs-grid {
+      grid-template-columns: 1fr 320px;
+      align-items: start;
+    }
+  }
+  .qs-sidebar {
+    position: sticky;
+    top: 1rem;
+    padding: 12px;
+    border: 1px solid var(--hairline-color, #e5e5e5);
+    border-radius: 8px;
+    background: var(--body-bg, #fff);
+  }
+  .filter-pair { display: grid; gap: 6px; margin-bottom: 8px; }
+  .filter-pair select, .filter-pair input { width: 100%; }
+  .qs-actions { display: flex; gap: 8px; margin-top: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qs-grid">
+  <div>
+    {{ block.super }}
+  </div>
+
+  <aside class="qs-sidebar">
+    <h3 style="margin-top:0;">Filters</h3>
+    <form method="get" id="dynamic-filter-form">
+      <div id="filter-pairs">
+        <div class="filter-pair">
+          <select name="filter_column_0">
+            <option value="name" {% if request.GET.filter_column_0 == "name" %}selected{% endif %}>name</option>
+            <option value="available_to_users" {% if request.GET.filter_column_0 == "available_to_users" %}selected{% endif %}>available to users</option>
+            <option value="system_default" {% if request.GET.filter_column_0 == "system_default" %}selected{% endif %}>system default</option>
+            <option value="description" {% if request.GET.filter_column_0 == "description" %}selected{% endif %}>description</option>
+            <option value="agent_uuid" {% if request.GET.filter_column_0 == "agent_uuid" %}selected{% endif %}>agent uuid</option>
+          </select>
+
+          <select name="filter_action_0">
+            <option value="include" {% if request.GET.filter_action_0|default:"include" == "include" %}selected{% endif %}>Include</option>
+            <option value="exclude" {% if request.GET.filter_action_0 == "exclude" %}selected{% endif %}>Exclude</option>
+            <option value="lt" {% if request.GET.filter_action_0 == "lt" %}selected{% endif %}>Less than</option>
+            <option value="lte" {% if request.GET.filter_action_0 == "lte" %}selected{% endif %}>Less than or equal to</option>
+            <option value="gt" {% if request.GET.filter_action_0 == "gt" %}selected{% endif %}>Greater than</option>
+            <option value="gte" {% if request.GET.filter_action_0 == "gte" %}selected{% endif %}>Greater than or equal to</option>
+            <option value="is_empty" {% if request.GET.filter_action_0 == "is_empty" %}selected{% endif %}>Is empty</option>
+            <option value="is_not_empty" {% if request.GET.filter_action_0 == "is_not_empty" %}selected{% endif %}>Is not empty</option>
+          </select>
+
+          <input type="text" name="filter_value_0" placeholder="Enter filter value"
+                 value="{{ request.GET.filter_value_0|default_if_none:'' }}">
+        </div>
+      </div>
+
+      <div class="qs-actions">
+        <button type="button" id="add-filter-pair" class="button btn btn-secondary">+</button>
+        <button type="submit" class="button button-primary">Apply</button>
+        <a href="." class="button">Clear</a>
+      </div>
+    </form>
+  </aside>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+(function() {
+  const container = document.getElementById('filter-pairs');
+  const addBtn = document.getElementById('add-filter-pair');
+  if (!container || !addBtn) return;
+
+  addBtn.addEventListener('click', function() {
+    const count = container.querySelectorAll('.filter-pair').length;
+    const first = container.querySelector('.filter-pair');
+    const clone = first.cloneNode(true);
+
+    clone.querySelectorAll('select,input').forEach(function(el) {
+      el.name = el.name.replace(/\d+$/, String(count));
+      if (el.tagName === 'INPUT') el.value = '';
+      if (el.tagName === 'SELECT' && el.name.startsWith('filter_action_')) el.value = 'include';
+      if (el.tagName === 'SELECT' && el.name.startsWith('filter_column_')) el.value = 'name';
+    });
+
+    container.appendChild(clone);
+  });
+})();
+</script>
+{% endblock %}
