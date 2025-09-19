@@ -2,6 +2,8 @@ from uuid import UUID
 from django.contrib import admin
 from django.db.models import Q
 from .models import Agent, Label, PromptTemplate, SecretStore, Tool, UtilityTool
+import csv
+from django.http import HttpResponse
 
 
 @admin.register(Agent)
@@ -16,6 +18,39 @@ class AgentAdmin(admin.ModelAdmin):
     search_fields = ("name", "description", "agent_uuid")
     list_filter = ("available_to_users", "system_default")  # native filters still work
     change_list_template = "admin/agentic_system/agent/change_list.html"
+
+    def changelist_view(self, request, extra_context=None):
+        if request.GET.get("download") == "csv":
+            return self.download_csv(request)
+        return super().changelist_view(request, extra_context)
+
+    # table content export functionality 
+    def download_csv(self , request , queryset=None):
+        """Export Agents to CSV (with current filters)."""
+        # If no queryset passed, export the whole filtered queryset
+        qs = queryset if queryset is not None else self.get_queryset(request)
+
+        response = HttpResponse(content_type ="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="agents.csv"'
+
+        writer = csv.writer(response)
+        #Header
+        writer.writerow(["Name", "Available To Users", "System Default", "Description", "Agent UUID"])
+
+        #Rows
+        for agent in qs:
+            writer.writerow([
+                agent.name,
+                agent.available_to_users,
+                agent.system_default,
+                agent.description,
+                agent.agent_uuid,
+            ])
+            
+        return response
+
+
+
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
