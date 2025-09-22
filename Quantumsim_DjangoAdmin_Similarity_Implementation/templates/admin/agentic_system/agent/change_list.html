@@ -75,6 +75,13 @@ window.resetFilters = function() {
       row.style.display = '';
     });
   }
+  
+  // Remove extra filter rows
+  const container = document.getElementById('filters-container');
+  const filterRows = container.querySelectorAll('.filter-row');
+  for (let i = 1; i < filterRows.length; i++) {
+    filterRows[i].remove();
+  }
 };
 
 // Column visibility functions
@@ -158,6 +165,23 @@ document.addEventListener('DOMContentLoaded', function() {
       form.reset();
       filenameSpan.textContent = 'No file chosen';
     });
+  }
+});
+
+// Add filter row functionality
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.add-filter-btn')) {
+    e.preventDefault();
+    const container = document.getElementById('filters-container');
+    const firstRow = container.querySelector('.filter-row');
+    const newRow = firstRow.cloneNode(true);
+    
+    newRow.querySelectorAll('select, input').forEach(el => {
+      if (el.tagName === 'INPUT') el.value = '';
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    });
+    
+    container.appendChild(newRow);
   }
 });
 
