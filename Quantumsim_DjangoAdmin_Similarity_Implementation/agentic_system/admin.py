@@ -3,6 +3,11 @@ from django.contrib import admin
 from django.db.models import Q
 from .models import Agent, Label, PromptTemplate, SecretStore, Tool, UtilityTool
 import csv
+import yaml
+from django.contrib import admin, messages
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import path, reverse
 from django.http import HttpResponse
 
 
@@ -23,6 +28,17 @@ class AgentAdmin(admin.ModelAdmin):
         if request.GET.get("download") == "csv":
             return self.download_csv(request)
         return super().changelist_view(request, extra_context)
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path(
+                "upload-config/",
+                self.admin_site.admin_view(self.upload_config),
+                name="agentic_system_agent_upload_config",  # this name must match template
+            ),
+        ]
+        return my_urls + urls
 
     # table content export functionality 
     def download_csv(self , request , queryset=None):
@@ -152,6 +168,130 @@ class AgentAdmin(admin.ModelAdmin):
         if exclude_q.children:
             qs = qs.exclude(exclude_q)
         return qs
+
+    def upload_config(self, request):
+        """
+        POST endpoint to handle YAML upload and upsert Agents, Tools, Utility Tools.
+        YAML shape (example):
+        ---
+        force_update: false
+        agents:
+          - name: "Researcher"
+            available_to_users: true
+            system_default: false
+            description: "Does research"
+            agent_uuid: "optional-uuid"
+        tools:
+          - name: "WebSearch"
+            description: "Search the web"
+        utility_tools:
+          - name: "CsvExporter"
+            description: "Exports CSV"
+        """
+        if request.method != "POST":
+            return HttpResponseRedirect(reverse("admin:agentic_system_agent_changelist"))
+
+        f = request.FILES.get("agent_config_file")
+        if not f:
+            messages.error(request, "No file was provided.")
+            return HttpResponseRedirect(reverse("admin:agentic_system_agent_changelist"))
+
+        try:
+            content = f.read().decode("utf-8", errors="ignore")
+            data = yaml.safe_load(content) or {}
+        except Exception as e:
+            messages.error(request, f"Invalid YAML: {e}")
+            return HttpResponseRedirect(reverse("admin:agentic_system_agent_changelist"))
+
+        def as_bool(v, default=False):
+            if isinstance(v, bool): return v
+            if v is None: return default
+            return str(v).lower() in ("1", "true", "yes", "y", "on")
+
+        global_force = as_bool(data.get("force_update"), False)
+
+        created, updated, skipped = [], [], []
+
+        # --- Agents ---
+        for item in (data.get("agents") or []):
+            name = (item.get("name") or "").strip()
+            if not name:
+                continue
+            force = as_bool(item.get("force_update"), global_force)
+
+            obj = Agent.objects.filter(name=name).first()
+            if obj and not force:
+                skipped.append(f"Agent:{name}")
+                continue
+
+            values = {
+                "available_to_users": as_bool(item.get("available_to_users"), True),
+                "system_default": as_bool(item.get("system_default"), False),
+                "description": item.get("description") or "",
+            }
+            agent_uuid = item.get("agent_uuid")
+            if agent_uuid:
+                try:
+                    values["agent_uuid"] = UUID(str(agent_uuid))
+                except Exception:
+                    pass
+
+            if obj:
+                for k, v in values.items():
+                    setattr(obj, k, v)
+                obj.save()
+                updated.append(f"Agent:{name}")
+            else:
+                obj = Agent.objects.create(name=name, **values)
+                created.append(f"Agent:{name}")
+
+        # --- Tools ---
+        for item in (data.get("tools") or []):
+            name = (item.get("name") or "").strip()
+            if not name:
+                continue
+            force = as_bool(item.get("force_update"), global_force)
+            obj = Tool.objects.filter(name=name).first()
+            if obj and not force:
+                skipped.append(f"Tool:{name}")
+                continue
+            desc = item.get("description") or ""
+            if obj:
+                obj.description = desc
+                obj.save()
+                updated.append(f"Tool:{name}")
+            else:
+                Tool.objects.create(name=name, description=desc)
+                created.append(f"Tool:{name}")
+
+        # --- Utility Tools ---
+        for item in (data.get("utility_tools") or []):
+            name = (item.get("name") or "").strip()
+            if not name:
+                continue
+            force = as_bool(item.get("force_update"), global_force)
+            obj = UtilityTool.objects.filter(name=name).first()
+            if obj and not force:
+                skipped.append(f"UtilityTool:{name}")
+                continue
+            desc = item.get("description") or ""
+            if obj:
+                obj.description = desc
+                obj.save()
+                updated.append(f"UtilityTool:{name}")
+            else:
+                UtilityTool.objects.create(name=name, description=desc)
+                created.append(f"UtilityTool:{name}")
+
+        msg = (
+            f"Created: {len(created)} | Updated: {len(updated)} | Skipped: {len(skipped)}."
+        )
+        if created: msg += f" Created -> {', '.join(created[:5])}{'…' if len(created)>5 else ''}"
+        if updated: msg += f" Updated -> {', '.join(updated[:5])}{'…' if len(updated)>5 else ''}"
+        if skipped: msg += f" Skipped -> {', '.join(skipped[:5])}{'…' if len(skipped)>5 else ''}"
+
+        messages.success(request, f"Agent Config processed. {msg}")
+        return HttpResponseRedirect(reverse("admin:agentic_system_agent_changelist"))
 
 
 @admin.register(Label)

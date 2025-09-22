@@ -125,3 +125,146 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+from django.apps import apps
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+ 
+def build_sidebar_navigation(request):
+    navigation = []
+ 
+    for app_config in apps.get_app_configs():
+        # Skip Django system apps if you want
+        if app_config.name.startswith("django."):
+            continue
+ 
+        models = []
+        for model in app_config.get_models():
+            opts = model._meta
+            try:
+                link = reverse(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+                models.append({
+                    "title": _(opts.verbose_name_plural.title()),
+                    "icon": "chevron_right",  # pick any Material icon
+                    "link": link,
+                })
+            except Exception:
+                pass  # model might not be registered in admin
+ 
+        if models:
+            navigation.append({
+                "title": _(app_config.verbose_name.title()),
+                "separator": False,
+                "collapsible": True,  # 👈 makes it collapsible
+                "items": models,
+            })
+ 
+    return navigation
+
+def permission_callback(request):
+    return request.user.has_perm("blogs.change_model")
+UNFOLD = {
+    "SITE_TITLE": "Custom suffix in <title> tag",
+    "SITE_HEADER": "Quantumsim Similarity",
+    "SITE_SUBHEADER": "Welcome to Quantumsim",
+   
+    "SITE_URL": "/",
+   
+    "SHOW_HISTORY": True, # show/hide "History" button, default: True
+    "SHOW_VIEW_ON_SITE": True, # show/hide "View on site" button, default: True
+    "SHOW_BACK_BUTTON": True, # show/hide "Back" button on changeform in header, default: False
+    "THEME": "light", # Force theme: "dark" or "light". Will disable theme switcher
+   
+    "BORDER_RADIUS": "6px",
+    "COLORS": {
+        "base": {
+            "50": "oklch(98.5% .002 247.839)",
+            "100": "oklch(96.7% .003 264.542)",
+            "200": "oklch(92.8% .006 264.531)",
+            "300": "oklch(87.2% .01 258.338)",
+            "400": "oklch(70.7% .022 261.325)",
+            "500": "oklch(55.1% .027 264.364)",
+            "600": "oklch(44.6% .03 256.802)",
+            "700": "oklch(37.3% .034 259.733)",
+            "800": "oklch(27.8% .033 256.848)",
+            "900": "oklch(21% .034 264.665)",
+            "950": "oklch(13% .028 261.692)",
+        },
+        "primary": {
+            "50": "oklch(97.7% .014 308.299)",
+            "100": "oklch(94.6% .033 307.174)",
+            "200": "oklch(90.2% .063 306.703)",
+            "300": "oklch(82.7% .119 306.383)",
+            "400": "oklch(71.4% .203 305.504)",
+            "500": "oklch(62.7% .265 303.9)",
+            "600": "#035289",
+            "700": "oklch(49.6% .265 301.924)",
+            "800": "oklch(43.8% .218 303.724)",
+            "900": "oklch(38.1% .176 304.987)",
+            "950": "oklch(29.1% .149 302.717)",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",  # text-base-500
+            "subtle-dark": "var(--color-base-400)",  # text-base-400
+            "default-light": "var(--color-base-600)",  # text-base-600
+            "default-dark": "var(--color-base-300)",  # text-base-300
+            "important-light": "var(--color-base-900)",  # text-base-900
+            "important-dark": "var(--color-base-100)",  # text-base-100
+        },
+    },
+    "EXTENSIONS": {
+        "modeltranslation": {
+            "flags": {
+                "en": "🇬🇧",
+                "fr": "🇫🇷",
+                "nl": "🇧🇪",
+            },
+        },
+    },
+"SIDEBAR": {
+    "show_search": False,
+    "collapsible":True,
+    "command_search": False,
+    "show_all_applications": False,   # 👈 enables auto apps & models
+    "navigation": build_sidebar_navigation,                # 👈 leave empty if you don’t want custom links
+},"TABS": [
+        {
+            "models": [
+                "app_label.model_name_in_lowercase",
+            ],
+            "items": [
+                {
+                    "title": _("Your custom title"),
+                    "link": "",
+                    "permission": permission_callback,
+                },
+            ],
+        },
+    ],
+}
+ 
+ 
+def dashboard_callback(request, context):
+    """
+    Callback to prepare custom variables for index template which is used as dashboard
+    template. It can be overridden in application by creating custom admin/index.html.
+    """
+    context.update(
+        {
+            "sample": "example",  # this will be injected into templates/admin/index.html
+        }
+    )
+    return context
+ 
+ 
+def environment_callback(request):
+    """
+    Callback has to return a list of two values represeting text value and the color
+    type of the label displayed in top right corner.
+    """
+    return ["Production", "danger"] # info, danger, warning, success
+ 
+ 
+def badge_callback(request):
+    return 3

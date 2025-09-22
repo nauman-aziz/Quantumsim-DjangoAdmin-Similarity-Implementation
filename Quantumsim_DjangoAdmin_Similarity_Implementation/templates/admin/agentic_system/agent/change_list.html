@@ -27,22 +27,185 @@
   .filter-pair { display: grid; gap: 6px; margin-bottom: 8px; }
   .filter-pair select, .filter-pair input { width: 100%; }
   .qs-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+  /* Modal base */
+  .qs-modal-backdrop {
+    display: none;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 1000;
+  }
+  .qs-modal {
+    position: fixed; inset: 0; display: none;
+    align-items: center; justify-content: center; z-index: 1001;
+  }
+  .qs-modal-content {
+    width: min(720px, 92vw);
+    background: var(--body-bg, #fff);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    overflow: hidden;
+  }
+  .qs-modal-header {
+    padding: 16px 20px; font-weight: 600; font-size: 16px;
+    border-bottom: 1px solid var(--hairline-color, #e5e5e5);
+  }
+  .qs-modal-body { padding: 16px 20px; }
+  .qs-modal-footer {
+    display:flex; gap:10px; justify-content:flex-end; padding: 12px 20px 16px;
+    border-top: 1px solid var(--hairline-color, #e5e5e5);
+  }
+  .qs-alert {
+    background: #FFE2E2; color: #F44336;
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;
+  }
+  .qs-file-btn {
+    display:flex; align-items:center; gap:8px;
+    border: 1px solid var(--hairline-color, #dcdcdc);
+    border-radius: 8px; padding: 10px 12px; cursor: pointer;
+    background: var(--body-bg, #fff);
+  }
+  .qs-file-btn:hover { background: rgba(0,0,0,0.03); }
+  .qs-hidden { display:none; }
 </style>
 {% endblock %}
 
-
 {% block search %}
-  {{ block.super }}
-  <div style="margin-left: 12px; display:inline-block;">
-    <a href="?download=csv" class="button bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm lg:ml-auto md:mt-0 2xl:hidden">DOWNLOAD CSV</a>
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    {{ block.super }}
+    <div style="display:flex; gap:8px; align-items:center;">
+      <a href="?download=csv"
+         class="button bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm">
+        DOWNLOAD CSV
+      </a>
+      <button type="button" id="open-agent-config"
+              class="button bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm">
+        AGENT CONFIG
+      </button>
+    </div>
   </div>
 {% endblock %}
 
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // ===== Modal controls =====
+  const openBtn = document.getElementById('open-agent-config');
+  const backdrop = document.getElementById('qs-agentcfg-backdrop');
+  const modal = document.getElementById('qs-agentcfg-modal');
+  const closeEls = document.querySelectorAll('[data-qs-close]');
+  const fileInput = document.getElementById('agent_config_file');
+  const chooseBtn = document.getElementById('qs-choose-file');
+  const resetBtn = document.getElementById('qs-reset');
+  const form = document.getElementById('qs-agentcfg-form');
+  const filenameSpan = document.getElementById('qs-filename');
+
+  function open() {
+    if (backdrop && modal) {
+      backdrop.style.display = 'block';
+      modal.style.display = 'flex';
+    }
+  }
+  function close() {
+    if (backdrop && modal) {
+      backdrop.style.display = 'none';
+      modal.style.display = 'none';
+    }
+  }
+
+  if (openBtn) openBtn.addEventListener('click', open);
+  closeEls.forEach(el => el.addEventListener('click', close));
+  if (backdrop) backdrop.addEventListener('click', close);
+
+  if (chooseBtn) chooseBtn.addEventListener('click', () => fileInput.click());
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      filenameSpan.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file chosen';
+    });
+  }
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      form.reset();
+      filenameSpan.textContent = 'No file chosen';
+    });
+  }
+
+  // ===== Dynamic filter pairs =====
+  const container = document.getElementById('filter-pairs');
+  const addBtn = document.getElementById('add-filter-pair');
+  if (container && addBtn) {
+    addBtn.addEventListener('click', function() {
+      const count = container.querySelectorAll('.filter-pair').length;
+      const first = container.querySelector('.filter-pair');
+      const clone = first.cloneNode(true);
+
+      clone.querySelectorAll('select,input').forEach(function(el) {
+        el.name = el.name.replace(/\d+$/, String(count));
+        if (el.tagName === 'INPUT') el.value = '';
+        if (el.tagName === 'SELECT' && el.name.startsWith('filter_action_')) el.value = 'include';
+        if (el.tagName === 'SELECT' && el.name.startsWith('filter_column_')) el.value = 'name';
+      });
+
+      container.appendChild(clone);
+    });
+  }
+});
+</script>
+{% endblock %}
 
 {% block content %}
-<div class="qs-grid">
+{{ block.super }}
+
+<!-- Modal -->
+<div id="qs-agentcfg-backdrop" class="qs-modal-backdrop" data-qs-close></div>
+<div id="qs-agentcfg-modal" class="qs-modal" role="dialog" aria-modal="true" aria-labelledby="qs-agentcfg-title">
+  <div class="qs-modal-content">
+    <div class="qs-modal-header">
+      <span id="qs-agentcfg-title">Agent Config</span>
+      <button type="button" class="button" style="float:right;" data-qs-close>✕</button>
+    </div>
+
+    <form id="qs-agentcfg-form" method="post" enctype="multipart/form-data"
+          action="./upload-config/">
+      {% csrf_token %}
+      <div class="qs-modal-body">
+        <div class="qs-alert">
+          If the Name of the Agents, Tools or Tool Utils already exists, unless you specifically set
+          <strong>force_update: true</strong> in the YAML file, the existing Agent, Tool or Tool Util will not be updated.
+        </div>
+
+        <input id="agent_config_file" name="agent_config_file" type="file" accept=".yml,.yaml" class="qs-hidden"/>
+
+        <button type="button" id="qs-choose-file" class="qs-file-btn" title="Choose file to upload">
+          <!-- svg icon -->
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <mask id="mask0_8989_151955" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+              <rect width="16" height="16" fill="#D9D9D9"/>
+            </mask>
+            <g mask="url(#mask0_8989_151955)">
+              <path d="M7.33342 10.6667V5.23334L5.60008 6.96667L4.66675 6.00001L8.00008 2.66667L11.3334 6.00001L10.4001 6.96667L8.66675 5.23334V10.6667H7.33342ZM4.00008 13.3333C3.63341 13.3333 3.31953 13.2028 3.05841 12.9417C2.7973 12.6806 2.66675 12.3667 2.66675 12V10H4.00008V12H12.0001V10H13.3334V12C13.3334 12.3667 13.2029 12.6806 12.9417 12.9417C12.6806 13.2028 12.3667 13.3333 12.0001 13.3333H4.00008Z" fill="#99A1AF"/>
+            </g>
+          </svg>
+          <span>Choose file to upload</span>
+        </button>
+        <div style="margin-top:6px; font-size:12px; color:#667085;">
+          <span id="qs-filename">No file chosen</span>
+        </div>
+      </div>
+
+      <div class="qs-modal-footer">
+        <button type="button" class="button" id="qs-reset">RESET</button>
+        <button type="submit" class="button button-primary">UPLOAD AGENT CONFIG</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Main grid with right sidebar filters -->
+<div class="qs-grid" style="margin-top:16px;">
   <div>
-    {{ block.super }}
+    {# table and controls already rendered by {{ block.super }} above #}
   </div>
 
   <aside class="qs-sidebar">
@@ -82,30 +245,4 @@
     </form>
   </aside>
 </div>
-{% endblock %}
-
-{% block extrahead %}
-{{ block.super }}
-<script>
-(function() {
-  const container = document.getElementById('filter-pairs');
-  const addBtn = document.getElementById('add-filter-pair');
-  if (!container || !addBtn) return;
-
-  addBtn.addEventListener('click', function() {
-    const count = container.querySelectorAll('.filter-pair').length;
-    const first = container.querySelector('.filter-pair');
-    const clone = first.cloneNode(true);
-
-    clone.querySelectorAll('select,input').forEach(function(el) {
-      el.name = el.name.replace(/\d+$/, String(count));
-      if (el.tagName === 'INPUT') el.value = '';
-      if (el.tagName === 'SELECT' && el.name.startsWith('filter_action_')) el.value = 'include';
-      if (el.tagName === 'SELECT' && el.name.startsWith('filter_column_')) el.value = 'name';
-    });
-
-    container.appendChild(clone);
-  });
-})();
-</script>
 {% endblock %}
