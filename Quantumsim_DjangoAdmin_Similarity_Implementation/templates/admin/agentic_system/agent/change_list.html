@@ -115,7 +115,7 @@ function toggleColumn(columnIndex, show) {
   const table = document.querySelector('#result_list');
   if (!table) return;
   
-  const colIndex = parseInt(columnIndex) + 1; // +1 for action checkbox column
+  const colIndex = parseInt(columnIndex) ; 
   const cells = table.querySelectorAll(`th:nth-child(${colIndex + 1}), td:nth-child(${colIndex + 1})`);
   
   cells.forEach(cell => {
