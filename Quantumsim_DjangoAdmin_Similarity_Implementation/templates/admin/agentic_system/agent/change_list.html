@@ -1,6 +1,12 @@
 {% extends "admin/change_list.html" %}
 {% load static %}
 
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/column_selector.css' %}" />
+<script src="{% static 'admin/js/column_selector.js' %}"></script>
+{% endblock %}
+
 {% block extrastyle %}
 {{ block.super }}
 <style>
@@ -27,6 +33,70 @@
   .filter-pair { display: grid; gap: 6px; margin-bottom: 8px; }
   .filter-pair select, .filter-pair input { width: 100%; }
   .qs-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+  /* Enhanced filter styles */
+  .column-selector-panel {
+    background: var(--body-bg, #fff);
+    border: 1px solid var(--hairline-color, #e5e5e5);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .filter-column, .filter-operator, .filter-value {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--hairline-color, #ddd);
+    border-radius: 4px;
+  }
+  .add-filter-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+  }
+  .add-filter-btn:hover {
+    background: rgba(0,0,0,0.05);
+  }
+  .column-checkboxes {
+    margin: 16px 0;
+  }
+  .column-checkboxes label {
+    display: block;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .select-all-label {
+    font-weight: bold;
+    border-bottom: 1px solid var(--hairline-color, #eee);
+    padding-bottom: 8px;
+    margin-bottom: 12px !important;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .action-buttons button {
+    padding: 8px 16px;
+    border: 1px solid var(--hairline-color, #ddd);
+    border-radius: 4px;
+    background: var(--body-bg, #fff);
+    cursor: pointer;
+  }
+  .action-buttons button:hover {
+    background: rgba(0,0,0,0.05);
+  }
+  #apply-filters {
+    background: #035289 !important;
+    color: white !important;
+  }
 
   /* Modal base */
   .qs-modal-backdrop {
@@ -70,23 +140,127 @@
 {% endblock %}
 
 {% block search %}
-  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-    {{ block.super }}
-    <div style="display:flex; gap:8px; align-items:center;">
-      <a href="?download=csv"
-         class="button bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm">
-        DOWNLOAD CSV
-      </a>
-      <button type="button" id="open-agent-config"
-              class="button bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm">
-        AGENT CONFIG
-      </button>
-    </div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%;">
+  {{ block.super }}
+  <div class="flex gap-2">
+    <a href="export-csv/" class="button" style="background: #f2f6f9; color: #035289; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px;">
+      DOWNLOAD CSV
+    </a>
+    {% if opts.model_name == 'post' %}
+    <a href="post-config/" class="button" style="background: #035289; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px;">
+      Post Config
+    </a>
+    {% endif %}
+    <button type="button" id="open-agent-config" class="button" style="background: #035289; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px; border: none; cursor: pointer;">
+      AGENT CONFIG
+    </button>
   </div>
+</div>
 {% endblock %}
 
-{% block extrahead %}
-{{ block.super }}
+
+
+{% block content %}
+<div id="changelist">
+  <div id="changelist-content">{{ block.super }}</div>
+
+  <div id="column-selector-panel" class="column-selector-panel">
+    <h3>Filters</h3>
+    <div id="filters-container">
+      <div class="filter-row">
+        <select class="filter-column">
+          <option value="">Column</option>
+          {% for field in cl.list_display %}
+            {% if field != "action_checkbox" %}
+            <option value="{{ forloop.counter0 }}">{{ field|capfirst }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <select class="filter-operator">
+          <option value="include">Include</option>
+          <option value="exclude">Exclude</option>
+          <option value="lt">Less Than</option>
+          <option value="lte">≤</option>
+          <option value="gt">Greater Than</option>
+          <option value="gte">≥</option>
+          <option value="empty">Is Empty</option>
+          <option value="not_empty">Not Empty</option>
+        </select>
+        <input type="text" class="filter-value" placeholder="Value" />
+        <button type="button" class="add-filter-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 17H13V13H17V11H13V7H11V11H7V13H11V17ZM12 22C10.6167 22 9.31667 21.7375 8.1 21.2125C6.88333 20.6875 5.825 19.975 4.925 19.075C4.025 18.175 3.3125 17.1167 2.7875 15.9C2.2625 14.6833 2 13.3833 2 12C2 10.6167 2.2625 9.31667 2.7875 8.1C3.3125 6.88333 4.025 5.825 4.925 4.925C5.825 4.025 6.88333 3.3125 8.1 2.7875C9.31667 2.2625 10.6167 2 12 2C13.3833 2 14.6833 2.2625 15.9 2.7875C17.1167 3.3125 18.175 4.025 19.075 4.925C19.975 5.825 20.6875 6.88333 21.2125 8.1C21.7375 9.31667 22 10.6167 22 12C22 13.3833 21.7375 14.6833 21.2125 15.9C20.6875 17.1167 19.975 18.175 19.075 19.075C18.175 19.975 17.1167 20.6875 15.9 21.2125C14.6833 21.7375 13.3833 22 12 22ZM12 20C14.2333 20 16.125 19.225 17.675 17.675C19.225 16.125 20 14.2333 20 12C20 9.76667 19.225 7.875 17.675 6.325C16.125 4.775 14.2333 4 12 4C9.76667 4 7.875 4.775 6.325 6.325C4.775 7.875 4 9.76667 4 12C4 14.2333 4.775 16.125 6.325 17.675C7.875 19.225 9.76667 20 12 20Z" fill="#035289"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <h3>Column Visibility</h3>
+    <div class="column-checkboxes">
+      <label class="select-all-label">
+        <input type="checkbox" id="select-all-columns" checked />
+        Select All
+      </label>
+      {% for field in cl.list_display %}
+        {% if field != "action_checkbox" %}
+        <label>
+          <input type="checkbox" class="column-toggle" data-column="{{ forloop.counter0 }}" checked />
+          {{ field|title }}
+        </label>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="action-buttons">
+      <button type="button" id="reset-filters">Reset</button>
+      <button type="button" id="apply-filters">Apply Filters</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="qs-agentcfg-backdrop" class="qs-modal-backdrop" data-qs-close></div>
+<div id="qs-agentcfg-modal" class="qs-modal" role="dialog" aria-modal="true" aria-labelledby="qs-agentcfg-title">
+  <div class="qs-modal-content">
+    <div class="qs-modal-header">
+      <span id="qs-agentcfg-title">Agent Config</span>
+      <button type="button" class="button" style="float:right;" data-qs-close>✕</button>
+    </div>
+
+    <form id="qs-agentcfg-form" method="post" enctype="multipart/form-data" action="./upload-config/">
+      {% csrf_token %}
+      <div class="qs-modal-body">
+        <div class="qs-alert">
+          If the Name of the Agents, Tools or Tool Utils already exists, unless you specifically set
+          <strong>force_update: true</strong> in the YAML file, the existing Agent, Tool or Tool Util will not be updated.
+        </div>
+
+        <input id="agent_config_file" name="agent_config_file" type="file" accept=".yml,.yaml" class="qs-hidden"/>
+
+        <button type="button" id="qs-choose-file" class="qs-file-btn" title="Choose file to upload">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <mask id="mask0_8989_151955" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+              <rect width="16" height="16" fill="#D9D9D9"/>
+            </mask>
+            <g mask="url(#mask0_8989_151955)">
+              <path d="M7.33342 10.6667V5.23334L5.60008 6.96667L4.66675 6.00001L8.00008 2.66667L11.3334 6.00001L10.4001 6.96667L8.66675 5.23334V10.6667H7.33342ZM4.00008 13.3333C3.63341 13.3333 3.31953 13.2028 3.05841 12.9417C2.7973 12.6806 2.66675 12.3667 2.66675 12V10H4.00008V12H12.0001V10H13.3334V12C13.3334 12.3667 13.2029 12.6806 12.9417 12.9417C12.6806 13.2028 12.3667 13.3333 12.0001 13.3333H4.00008Z" fill="#99A1AF"/>
+            </g>
+          </svg>
+          <span>Choose file to upload</span>
+        </button>
+        <div style="margin-top:6px; font-size:12px; color:#667085;">
+          <span id="qs-filename">No file chosen</span>
+        </div>
+      </div>
+
+      <div class="qs-modal-footer">
+        <button type="button" class="button" id="qs-reset">RESET</button>
+        <button type="submit" class="button button-primary">UPLOAD AGENT CONFIG</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   // ===== Modal controls =====
@@ -131,118 +305,161 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // ===== Dynamic filter pairs =====
-  const container = document.getElementById('filter-pairs');
-  const addBtn = document.getElementById('add-filter-pair');
-  if (container && addBtn) {
-    addBtn.addEventListener('click', function() {
-      const count = container.querySelectorAll('.filter-pair').length;
-      const first = container.querySelector('.filter-pair');
-      const clone = first.cloneNode(true);
+  // ===== Enhanced filter functionality =====
+  const filtersContainer = document.getElementById('filters-container');
+  const addFilterBtn = document.querySelector('.add-filter-btn');
+  const applyFiltersBtn = document.getElementById('apply-filters');
+  const resetFiltersBtn = document.getElementById('reset-filters');
+  const selectAllCheckbox = document.getElementById('select-all-columns');
+  const columnToggles = document.querySelectorAll('.column-toggle');
 
-      clone.querySelectorAll('select,input').forEach(function(el) {
-        el.name = el.name.replace(/\d+$/, String(count));
+  // Add new filter row
+  if (addFilterBtn) {
+    addFilterBtn.addEventListener('click', function() {
+      const filterRow = document.querySelector('.filter-row').cloneNode(true);
+      filterRow.querySelectorAll('select, input').forEach(el => {
         if (el.tagName === 'INPUT') el.value = '';
-        if (el.tagName === 'SELECT' && el.name.startsWith('filter_action_')) el.value = 'include';
-        if (el.tagName === 'SELECT' && el.name.startsWith('filter_column_')) el.value = 'name';
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
       });
+      filtersContainer.appendChild(filterRow);
+    });
+  }
 
-      container.appendChild(clone);
+  // Select all columns toggle
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      columnToggles.forEach(toggle => {
+        toggle.checked = this.checked;
+        const columnIndex = toggle.dataset.column;
+        const table = document.querySelector('#result_list');
+        if (table) {
+          const cells = table.querySelectorAll(`th:nth-child(${parseInt(columnIndex) + 2}), td:nth-child(${parseInt(columnIndex) + 2})`);
+          cells.forEach(cell => {
+            cell.style.display = this.checked ? '' : 'none';
+          });
+        }
+      });
+    });
+  }
+
+  // Individual column toggles
+  columnToggles.forEach(toggle => {
+    toggle.addEventListener('change', function() {
+      const columnIndex = this.dataset.column;
+      const table = document.querySelector('#result_list');
+      if (table) {
+        const cells = table.querySelectorAll(`th:nth-child(${parseInt(columnIndex) + 2}), td:nth-child(${parseInt(columnIndex) + 2})`);
+        cells.forEach(cell => {
+          cell.style.display = this.checked ? '' : 'none';
+        });
+      }
+      
+      // Update select all checkbox
+      const allChecked = Array.from(columnToggles).every(t => t.checked);
+      selectAllCheckbox.checked = allChecked;
+    });
+  });
+
+  // Reset filters
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener('click', function() {
+      // Reset filter inputs
+      document.querySelectorAll('.filter-column, .filter-operator, .filter-value').forEach(el => {
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        if (el.tagName === 'INPUT') el.value = '';
+      });
+      
+      // Reset column visibility
+      columnToggles.forEach(toggle => {
+        toggle.checked = true;
+        const columnIndex = toggle.dataset.column;
+        const table = document.querySelector('#result_list');
+        if (table) {
+          const cells = table.querySelectorAll(`th:nth-child(${parseInt(columnIndex) + 2}), td:nth-child(${parseInt(columnIndex) + 2})`);
+          cells.forEach(cell => {
+            cell.style.display = '';
+          });
+        }
+      });
+      selectAllCheckbox.checked = true;
+      
+      // Show all table rows
+      const table = document.querySelector('#result_list');
+      if (table) {
+        table.querySelectorAll('tbody tr').forEach(row => {
+          row.style.display = '';
+        });
+      }
+      
+      // Remove extra filter rows
+      const filterRows = filtersContainer.querySelectorAll('.filter-row');
+      for (let i = 1; i < filterRows.length; i++) {
+        filterRows[i].remove();
+      }
+    });
+  }
+
+  // Apply filters with table filtering
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener('click', function() {
+      const table = document.querySelector('#result_list');
+      if (!table) return;
+      
+      const rows = table.querySelectorAll('tbody tr');
+      const filters = [];
+      
+      document.querySelectorAll('.filter-row').forEach(row => {
+        const column = row.querySelector('.filter-column').value;
+        const operator = row.querySelector('.filter-operator').value;
+        const value = row.querySelector('.filter-value').value.toLowerCase();
+        
+        if (column && operator && (value || operator === 'empty' || operator === 'not_empty')) {
+          filters.push({ column: parseInt(column), operator, value });
+        }
+      });
+      
+      rows.forEach(row => {
+        let showRow = true;
+        
+        filters.forEach(filter => {
+          const cell = row.cells[filter.column + 1]; // +1 for action checkbox
+          if (!cell) return;
+          
+          const cellText = cell.textContent.toLowerCase().trim();
+          const cellValue = parseFloat(cellText) || 0;
+          
+          switch (filter.operator) {
+            case 'include':
+              if (!cellText.includes(filter.value)) showRow = false;
+              break;
+            case 'exclude':
+              if (cellText.includes(filter.value)) showRow = false;
+              break;
+            case 'lt':
+              if (cellValue >= parseFloat(filter.value)) showRow = false;
+              break;
+            case 'lte':
+              if (cellValue > parseFloat(filter.value)) showRow = false;
+              break;
+            case 'gt':
+              if (cellValue <= parseFloat(filter.value)) showRow = false;
+              break;
+            case 'gte':
+              if (cellValue < parseFloat(filter.value)) showRow = false;
+              break;
+            case 'empty':
+              if (cellText !== '') showRow = false;
+              break;
+            case 'not_empty':
+              if (cellText === '') showRow = false;
+              break;
+          }
+        });
+        
+        row.style.display = showRow ? '' : 'none';
+      });
     });
   }
 });
 </script>
-{% endblock %}
-
-{% block content %}
-{{ block.super }}
-
-<!-- Modal -->
-<div id="qs-agentcfg-backdrop" class="qs-modal-backdrop" data-qs-close></div>
-<div id="qs-agentcfg-modal" class="qs-modal" role="dialog" aria-modal="true" aria-labelledby="qs-agentcfg-title">
-  <div class="qs-modal-content">
-    <div class="qs-modal-header">
-      <span id="qs-agentcfg-title">Agent Config</span>
-      <button type="button" class="button" style="float:right;" data-qs-close>✕</button>
-    </div>
-
-    <form id="qs-agentcfg-form" method="post" enctype="multipart/form-data"
-          action="./upload-config/">
-      {% csrf_token %}
-      <div class="qs-modal-body">
-        <div class="qs-alert">
-          If the Name of the Agents, Tools or Tool Utils already exists, unless you specifically set
-          <strong>force_update: true</strong> in the YAML file, the existing Agent, Tool or Tool Util will not be updated.
-        </div>
-
-        <input id="agent_config_file" name="agent_config_file" type="file" accept=".yml,.yaml" class="qs-hidden"/>
-
-        <button type="button" id="qs-choose-file" class="qs-file-btn" title="Choose file to upload">
-          <!-- svg icon -->
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <mask id="mask0_8989_151955" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
-              <rect width="16" height="16" fill="#D9D9D9"/>
-            </mask>
-            <g mask="url(#mask0_8989_151955)">
-              <path d="M7.33342 10.6667V5.23334L5.60008 6.96667L4.66675 6.00001L8.00008 2.66667L11.3334 6.00001L10.4001 6.96667L8.66675 5.23334V10.6667H7.33342ZM4.00008 13.3333C3.63341 13.3333 3.31953 13.2028 3.05841 12.9417C2.7973 12.6806 2.66675 12.3667 2.66675 12V10H4.00008V12H12.0001V10H13.3334V12C13.3334 12.3667 13.2029 12.6806 12.9417 12.9417C12.6806 13.2028 12.3667 13.3333 12.0001 13.3333H4.00008Z" fill="#99A1AF"/>
-            </g>
-          </svg>
-          <span>Choose file to upload</span>
-        </button>
-        <div style="margin-top:6px; font-size:12px; color:#667085;">
-          <span id="qs-filename">No file chosen</span>
-        </div>
-      </div>
-
-      <div class="qs-modal-footer">
-        <button type="button" class="button" id="qs-reset">RESET</button>
-        <button type="submit" class="button button-primary">UPLOAD AGENT CONFIG</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Main grid with right sidebar filters -->
-<div class="qs-grid" style="margin-top:16px;">
-  <div>
-    {# table and controls already rendered by {{ block.super }} above #}
-  </div>
-
-  <aside class="qs-sidebar">
-    <h3 style="margin-top:0;">Filters</h3>
-    <form method="get" id="dynamic-filter-form">
-      <div id="filter-pairs">
-        <div class="filter-pair">
-          <select name="filter_column_0">
-            <option value="name" {% if request.GET.filter_column_0 == "name" %}selected{% endif %}>name</option>
-            <option value="available_to_users" {% if request.GET.filter_column_0 == "available_to_users" %}selected{% endif %}>available to users</option>
-            <option value="system_default" {% if request.GET.filter_column_0 == "system_default" %}selected{% endif %}>system default</option>
-            <option value="description" {% if request.GET.filter_column_0 == "description" %}selected{% endif %}>description</option>
-            <option value="agent_uuid" {% if request.GET.filter_column_0 == "agent_uuid" %}selected{% endif %}>agent uuid</option>
-          </select>
-
-          <select name="filter_action_0">
-            <option value="include" {% if request.GET.filter_action_0|default:"include" == "include" %}selected{% endif %}>Include</option>
-            <option value="exclude" {% if request.GET.filter_action_0 == "exclude" %}selected{% endif %}>Exclude</option>
-            <option value="lt" {% if request.GET.filter_action_0 == "lt" %}selected{% endif %}>Less than</option>
-            <option value="lte" {% if request.GET.filter_action_0 == "lte" %}selected{% endif %}>Less than or equal to</option>
-            <option value="gt" {% if request.GET.filter_action_0 == "gt" %}selected{% endif %}>Greater than</option>
-            <option value="gte" {% if request.GET.filter_action_0 == "gte" %}selected{% endif %}>Greater than or equal to</option>
-            <option value="is_empty" {% if request.GET.filter_action_0 == "is_empty" %}selected{% endif %}>Is empty</option>
-            <option value="is_not_empty" {% if request.GET.filter_action_0 == "is_not_empty" %}selected{% endif %}>Is not empty</option>
-          </select>
-
-          <input type="text" name="filter_value_0" placeholder="Enter filter value"
-                 value="{{ request.GET.filter_value_0|default_if_none:'' }}">
-        </div>
-      </div>
-
-      <div class="qs-actions">
-        <button type="button" id="add-filter-pair" class="button btn btn-secondary">+</button>
-        <button type="submit" class="button button-primary">Apply</button>
-        <a href="." class="button">Clear</a>
-      </div>
-    </form>
-  </aside>
-</div>
 {% endblock %}
