@@ -3,8 +3,80 @@
 
 {% block extrahead %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="{% static 'admin/css/column_selector.css' %}" />
-<script src="{% static 'admin/js/column_selector.js' %}"></script>
+<script>
+window.applyFilters = function() {
+  const table = document.querySelector('#result_list');
+  if (!table) return;
+  
+  const rows = table.querySelectorAll('tbody tr');
+  const filters = [];
+  
+  document.querySelectorAll('.filter-row').forEach(row => {
+    const column = row.querySelector('.filter-column').value;
+    const operator = row.querySelector('.filter-operator').value;
+    const value = row.querySelector('.filter-value').value.toLowerCase();
+    
+    if (column !== '' && operator && (value || operator === 'empty' || operator === 'not_empty')) {
+      filters.push({ column: parseInt(column), operator, value });
+    }
+  });
+  
+  rows.forEach(row => {
+    let showRow = true;
+    
+    filters.forEach(filter => {
+      const cell = row.cells[filter.column + 1];
+      if (!cell) return;
+      
+      const cellText = cell.textContent.toLowerCase().trim();
+      const cellValue = parseFloat(cellText) || 0;
+      
+      switch (filter.operator) {
+        case 'include':
+          if (!cellText.includes(filter.value)) showRow = false;
+          break;
+        case 'exclude':
+          if (cellText.includes(filter.value)) showRow = false;
+          break;
+        case 'lt':
+          if (cellValue >= parseFloat(filter.value)) showRow = false;
+          break;
+        case 'lte':
+          if (cellValue > parseFloat(filter.value)) showRow = false;
+          break;
+        case 'gt':
+          if (cellValue <= parseFloat(filter.value)) showRow = false;
+          break;
+        case 'gte':
+          if (cellValue < parseFloat(filter.value)) showRow = false;
+          break;
+        case 'empty':
+          if (cellText !== '') showRow = false;
+          break;
+        case 'not_empty':
+          if (cellText === '') showRow = false;
+          break;
+      }
+    });
+    
+    row.style.display = showRow ? '' : 'none';
+  });
+};
+
+window.resetFilters = function() {
+  document.querySelectorAll('.filter-column, .filter-operator, .filter-value').forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    if (el.tagName === 'INPUT') el.value = '';
+  });
+  
+  const table = document.querySelector('#result_list');
+  if (table) {
+    table.querySelectorAll('tbody tr').forEach(row => {
+      row.style.display = '';
+    });
+  }
+};
+</script>
 {% endblock %}
 
 {% block extrastyle %}
@@ -40,7 +112,6 @@
     border: 1px solid var(--hairline-color, #e5e5e5);
     border-radius: 8px;
     padding: 16px;
-    /* width: 240px; */
   }
   .filter-row {
     display: flex;
@@ -61,12 +132,8 @@
     padding: 6px;
     border-radius: 4px;
   }
-  .add-filter-btn:hover {
-    background: rgba(0,0,0,0.05);
-  }
-  .column-checkboxes {
-    margin: 16px 0;
-  }
+  .add-filter-btn:hover { background: rgba(0,0,0,0.05); }
+  .column-checkboxes { margin: 16px 0; }
   .column-checkboxes label {
     display: block;
     margin-bottom: 8px;
@@ -74,7 +141,6 @@
   }
   .select-all-label {
     font-weight: bold;
-    /* border-bottom: 1px solid var(--hairline-color, #eee); */
     padding-bottom: 8px;
     margin-bottom: 12px !important;
   }
@@ -91,14 +157,12 @@
     cursor: pointer;
     width: 242px;
   }
-  .action-buttons button:hover {
-    background: rgba(0,0,0,0.05);
-  }
+  .action-buttons button:hover { background: rgba(0,0,0,0.05); }
   #apply-filters {
     background: #035289 !important;
     color: white !important;
   }
-  
+
   /* Hide default Django filters */
   #changelist-filter { display: none !important; }
 
@@ -162,8 +226,6 @@
 </div>
 {% endblock %}
 
-
-
 {% block content %}
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
@@ -218,8 +280,8 @@
     </div>
 
     <div class="action-buttons">
-      <button type="button" id="reset-filters">Reset</button>
-      <button type="button" id="apply-filters">Apply Filters</button>
+      <button type="button" id="reset-filters" onclick="resetFilters()">Reset</button>
+      <button type="button" id="apply-filters" onclick="applyFilters()">Apply Filters</button>
     </div>
   </div>
 </div>
@@ -269,213 +331,10 @@
 {% endblock %}
 
 {% block filters %}
-<!-- Hide default Django filters -->
 <style>
-  #changelist-filter { display: hidden !important; }
+  /* Hide default Django filters (correct CSS) */
+  #changelist-filter { display: none !important; }
 </style>
 {% endblock %}
 
-{% block extrajs %}
-{{ block.super }}
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  // ===== Modal controls =====
-  const openBtn = document.getElementById('open-agent-config');
-  const backdrop = document.getElementById('qs-agentcfg-backdrop');
-  const modal = document.getElementById('qs-agentcfg-modal');
-  const closeEls = document.querySelectorAll('[data-qs-close]');
-  const fileInput = document.getElementById('agent_config_file');
-  const chooseBtn = document.getElementById('qs-choose-file');
-  const resetBtn = document.getElementById('qs-reset');
-  const form = document.getElementById('qs-agentcfg-form');
-  const filenameSpan = document.getElementById('qs-filename');
 
-  function open() {
-    if (backdrop && modal) {
-      backdrop.style.display = 'block';
-      modal.style.display = 'flex';
-    }
-  }
-  function close() {
-    if (backdrop && modal) {
-      backdrop.style.display = 'none';
-      modal.style.display = 'none';
-    }
-  }
-
-  if (openBtn) openBtn.addEventListener('click', open);
-  closeEls.forEach(el => el.addEventListener('click', close));
-  if (backdrop) backdrop.addEventListener('click', close);
-
-  if (chooseBtn) chooseBtn.addEventListener('click', () => fileInput.click());
-  if (fileInput) {
-    fileInput.addEventListener('change', function() {
-      filenameSpan.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file chosen';
-    });
-  }
-  if (resetBtn) {
-    resetBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      form.reset();
-      filenameSpan.textContent = 'No file chosen';
-    });
-  }
-
-  // ===== Enhanced filter functionality =====
-  const filtersContainer = document.getElementById('filters-container');
-  const addFilterBtn = document.querySelector('.add-filter-btn');
-  const applyFiltersBtn = document.getElementById('apply-filters');
-  const resetFiltersBtn = document.getElementById('reset-filters');
-  const selectAllCheckbox = document.getElementById('select-all-columns');
-  const columnToggles = document.querySelectorAll('.column-toggle');
-
-  // Add new filter row
-  if (addFilterBtn) {
-    addFilterBtn.addEventListener('click', function() {
-      const filterRow = document.querySelector('.filter-row').cloneNode(true);
-      filterRow.querySelectorAll('select, input').forEach(el => {
-        if (el.tagName === 'INPUT') el.value = '';
-        if (el.tagName === 'SELECT') el.selectedIndex = 0;
-      });
-      filtersContainer.appendChild(filterRow);
-    });
-  }
-
-  // Select all columns toggle
-  if (selectAllCheckbox) {
-    selectAllCheckbox.addEventListener('change', function() {
-      columnToggles.forEach(toggle => {
-        toggle.checked = this.checked;
-        const columnIndex = toggle.dataset.column;
-        const table = document.querySelector('#result_list');
-        if (table) {
-          const cells = table.querySelectorAll(`th:nth-child(${parseInt(columnIndex) + 2}), td:nth-child(${parseInt(columnIndex) + 2})`);
-          cells.forEach(cell => {
-            cell.style.display = this.checked ? '' : 'none';
-          });
-        }
-      });
-    });
-  }
-
-  // Individual column toggles
-  columnToggles.forEach(toggle => {
-    toggle.addEventListener('change', function() {
-      const columnIndex = this.dataset.column;
-      const table = document.querySelector('#result_list');
-      if (table) {
-        const cells = table.querySelectorAll(`th:nth-child(${parseInt(columnIndex) + 2}), td:nth-child(${parseInt(columnIndex) + 2})`);
-        cells.forEach(cell => {
-          cell.style.display = this.checked ? '' : 'none';
-        });
-      }
-      
-      // Update select all checkbox
-      const allChecked = Array.from(columnToggles).every(t => t.checked);
-      selectAllCheckbox.checked = allChecked;
-    });
-  });
-
-  // Reset filters
-  if (resetFiltersBtn) {
-    resetFiltersBtn.addEventListener('click', function() {
-      // Reset filter inputs
-      document.querySelectorAll('.filter-column, .filter-operator, .filter-value').forEach(el => {
-        if (el.tagName === 'SELECT') el.selectedIndex = 0;
-        if (el.tagName === 'INPUT') el.value = '';
-      });
-      
-      // Reset column visibility
-      columnToggles.forEach(toggle => {
-        toggle.checked = true;
-        const columnIndex = toggle.dataset.column;
-        const table = document.querySelector('#result_list');
-        if (table) {
-          const cells = table.querySelectorAll(`th:nth-child(${parseInt(columnIndex) + 2}), td:nth-child(${parseInt(columnIndex) + 2})`);
-          cells.forEach(cell => {
-            cell.style.display = '';
-          });
-        }
-      });
-      selectAllCheckbox.checked = true;
-      
-      // Show all table rows
-      const table = document.querySelector('#result_list');
-      if (table) {
-        table.querySelectorAll('tbody tr').forEach(row => {
-          row.style.display = '';
-        });
-      }
-      
-      // Remove extra filter rows
-      const filterRows = filtersContainer.querySelectorAll('.filter-row');
-      for (let i = 1; i < filterRows.length; i++) {
-        filterRows[i].remove();
-      }
-    });
-  }
-
-  // Apply filters with table filtering
-  if (applyFiltersBtn) {
-    applyFiltersBtn.addEventListener('click', function() {
-      const table = document.querySelector('#result_list');
-      if (!table) return;
-      
-      const rows = table.querySelectorAll('tbody tr');
-      const filters = [];
-      
-      document.querySelectorAll('.filter-row').forEach(row => {
-        const column = row.querySelector('.filter-column').value;
-        const operator = row.querySelector('.filter-operator').value;
-        const value = row.querySelector('.filter-value').value.toLowerCase();
-        
-        if (column && operator && (value || operator === 'empty' || operator === 'not_empty')) {
-          filters.push({ column: parseInt(column), operator, value });
-        }
-      });
-      
-      rows.forEach(row => {
-        let showRow = true;
-        
-        filters.forEach(filter => {
-          const cell = row.cells[filter.column + 1]; // +1 for action checkbox
-          if (!cell) return;
-          
-          const cellText = cell.textContent.toLowerCase().trim();
-          const cellValue = parseFloat(cellText) || 0;
-          
-          switch (filter.operator) {
-            case 'include':
-              if (!cellText.includes(filter.value)) showRow = false;
-              break;
-            case 'exclude':
-              if (cellText.includes(filter.value)) showRow = false;
-              break;
-            case 'lt':
-              if (cellValue >= parseFloat(filter.value)) showRow = false;
-              break;
-            case 'lte':
-              if (cellValue > parseFloat(filter.value)) showRow = false;
-              break;
-            case 'gt':
-              if (cellValue <= parseFloat(filter.value)) showRow = false;
-              break;
-            case 'gte':
-              if (cellValue < parseFloat(filter.value)) showRow = false;
-              break;
-            case 'empty':
-              if (cellText !== '') showRow = false;
-              break;
-            case 'not_empty':
-              if (cellText === '') showRow = false;
-              break;
-          }
-        });
-        
-        row.style.display = showRow ? '' : 'none';
-      });
-    });
-  }
-});
-</script>
-{% endblock %}
