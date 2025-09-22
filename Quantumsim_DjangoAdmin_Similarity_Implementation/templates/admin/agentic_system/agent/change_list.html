@@ -115,6 +115,91 @@ function toggleColumn(columnIndex, show) {
     cell.style.display = show ? '' : 'none';
   });
 }
+
+// Modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const openBtn = document.getElementById('open-agent-config');
+  const backdrop = document.getElementById('qs-agentcfg-backdrop');
+  const modal = document.getElementById('qs-agentcfg-modal');
+  const closeEls = document.querySelectorAll('[data-qs-close]');
+  const fileInput = document.getElementById('agent_config_file');
+  const chooseBtn = document.getElementById('qs-choose-file');
+  const resetBtn = document.getElementById('qs-reset');
+  const form = document.getElementById('qs-agentcfg-form');
+  const filenameSpan = document.getElementById('qs-filename');
+
+  function openModal() {
+    if (backdrop && modal) {
+      backdrop.style.display = 'block';
+      modal.style.display = 'flex';
+    }
+  }
+  
+  function closeModal() {
+    if (backdrop && modal) {
+      backdrop.style.display = 'none';
+      modal.style.display = 'none';
+    }
+  }
+
+  if (openBtn) openBtn.addEventListener('click', openModal);
+  closeEls.forEach(el => el.addEventListener('click', closeModal));
+  if (backdrop) backdrop.addEventListener('click', closeModal);
+
+  if (chooseBtn) chooseBtn.addEventListener('click', () => fileInput.click());
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      filenameSpan.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file chosen';
+    });
+  }
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      form.reset();
+      filenameSpan.textContent = 'No file chosen';
+    });
+  }
+});
+
+// CSV Download functionality
+function downloadCSV() {
+  const table = document.querySelector('#result_list');
+  if (!table) return;
+  
+  const rows = [];
+  const headerCells = table.querySelectorAll('thead th');
+  const header = [];
+  
+  headerCells.forEach(cell => {
+    if (cell.style.display !== 'none') {
+      header.push(cell.textContent.trim());
+    }
+  });
+  rows.push(header);
+  
+  const bodyRows = table.querySelectorAll('tbody tr');
+  bodyRows.forEach(row => {
+    if (row.style.display !== 'none') {
+      const rowData = [];
+      const cells = row.querySelectorAll('td, th');
+      cells.forEach(cell => {
+        if (cell.style.display !== 'none') {
+          rowData.push(cell.textContent.trim());
+        }
+      });
+      rows.push(rowData);
+    }
+  });
+  
+  const csvContent = rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'table_data.csv';
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
 </script>
 {% endblock %}
 
@@ -250,9 +335,9 @@ function toggleColumn(columnIndex, show) {
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%;">
   {{ block.super }}
   <div class="flex gap-2">
-    <a href="export-csv/" class="button" style="background: #f2f6f9; color: #035289; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px;">
+    <button type="button" onclick="downloadCSV()" class="button" style="background: #f2f6f9; color: #035289; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px; border: none; cursor: pointer;">
       DOWNLOAD CSV
-    </a>
+    </button>
     {% if opts.model_name == 'post' %}
     <a href="post-config/" class="button" style="background: #035289; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px;">
       Post Config
