@@ -40,12 +40,11 @@
     border: 1px solid var(--hairline-color, #e5e5e5);
     border-radius: 8px;
     padding: 16px;
-    margin-top: 16px;
+    /* width: 240px; */
   }
   .filter-row {
     display: flex;
     gap: 8px;
-    align-items: center;
     margin-bottom: 10px;
   }
   .filter-column, .filter-operator, .filter-value {
@@ -53,6 +52,7 @@
     padding: 6px 8px;
     border: 1px solid var(--hairline-color, #ddd);
     border-radius: 4px;
+    width: 138px;
   }
   .add-filter-btn {
     background: none;
@@ -74,7 +74,7 @@
   }
   .select-all-label {
     font-weight: bold;
-    border-bottom: 1px solid var(--hairline-color, #eee);
+    /* border-bottom: 1px solid var(--hairline-color, #eee); */
     padding-bottom: 8px;
     margin-bottom: 12px !important;
   }
@@ -89,6 +89,7 @@
     border-radius: 4px;
     background: var(--body-bg, #fff);
     cursor: pointer;
+    width: 242px;
   }
   .action-buttons button:hover {
     background: rgba(0,0,0,0.05);
@@ -97,6 +98,9 @@
     background: #035289 !important;
     color: white !important;
   }
+  
+  /* Hide default Django filters */
+  #changelist-filter { display: none !important; }
 
   /* Modal base */
   .qs-modal-backdrop {
@@ -161,9 +165,11 @@
 
 
 {% block content %}
-<div id="changelist">
-  <div id="changelist-content">{{ block.super }}</div>
-
+<div style="display: flex; gap: 20px;">
+  <div style="flex: 1;">
+    {{ block.super }}
+  </div>
+  
   <div id="column-selector-panel" class="column-selector-panel">
     <h3>Filters</h3>
     <div id="filters-container">
@@ -195,7 +201,7 @@
       </div>
     </div>
 
-    <h3>Column Visibility</h3>
+    <h3>Column Selection</h3>
     <div class="column-checkboxes">
       <label class="select-all-label">
         <input type="checkbox" id="select-all-columns" checked />
@@ -260,7 +266,17 @@
     </form>
   </div>
 </div>
+{% endblock %}
 
+{% block filters %}
+<!-- Hide default Django filters -->
+<style>
+  #changelist-filter { display: hidden !important; }
+</style>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   // ===== Modal controls =====
