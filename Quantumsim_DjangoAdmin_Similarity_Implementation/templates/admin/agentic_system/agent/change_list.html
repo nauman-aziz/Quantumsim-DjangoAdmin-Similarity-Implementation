@@ -76,6 +76,45 @@ window.resetFilters = function() {
     });
   }
 };
+
+// Column visibility functions
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAllCheckbox = document.getElementById('select-all-columns');
+  const columnToggles = document.querySelectorAll('.column-toggle');
+  
+  // Select all toggle
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      columnToggles.forEach(toggle => {
+        toggle.checked = this.checked;
+        toggleColumn(toggle.dataset.column, this.checked);
+      });
+    });
+  }
+  
+  // Individual column toggles
+  columnToggles.forEach(toggle => {
+    toggle.addEventListener('change', function() {
+      toggleColumn(this.dataset.column, this.checked);
+      
+      // Update select all checkbox
+      const allChecked = Array.from(columnToggles).every(t => t.checked);
+      selectAllCheckbox.checked = allChecked;
+    });
+  });
+});
+
+function toggleColumn(columnIndex, show) {
+  const table = document.querySelector('#result_list');
+  if (!table) return;
+  
+  const colIndex = parseInt(columnIndex) + 1; // +1 for action checkbox column
+  const cells = table.querySelectorAll(`th:nth-child(${colIndex + 1}), td:nth-child(${colIndex + 1})`);
+  
+  cells.forEach(cell => {
+    cell.style.display = show ? '' : 'none';
+  });
+}
 </script>
 {% endblock %}
 
