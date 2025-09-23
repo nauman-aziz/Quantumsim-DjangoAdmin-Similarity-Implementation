@@ -310,6 +310,12 @@ function downloadCSV() {
     background: #035289 !important;
     color: white !important;
   }
+  #upload-agent-config {
+    background: #035289 !important;
+    color: white !important;
+    padding: 10px;
+    border-radius: 4px;
+  }
 
   /* Hide default Django filters */
   #changelist-filter { display: none !important; }
@@ -337,11 +343,12 @@ function downloadCSV() {
   }
   .qs-modal-body { padding: 16px 20px; }
   .qs-modal-footer {
+    height: 70px;
     display:flex; gap:10px; justify-content:flex-end; padding: 12px 20px 16px;
     border-top: 1px solid var(--hairline-color, #e5e5e5);
   }
   .qs-alert {
-    background: #FFE2E2; color: #F44336;
+    background: #FFE2E2; color: #C10007;
     border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;
   }
   .qs-file-btn {
@@ -482,7 +489,7 @@ function downloadCSV() {
   <div class="qs-modal-content">
     <div class="qs-modal-header">
       <span id="qs-agentcfg-title">Agent Config</span>
-      <button type="button" class="button" style="float:right;" data-qs-close>✕</button>
+      <button type="button" class="button cursor-pointer" style="float:right;" data-qs-close>✕</button>
     </div>
 
     <form id="qs-agentcfg-form" method="post" enctype="multipart/form-data" action="./upload-config/">
@@ -512,8 +519,8 @@ function downloadCSV() {
       </div>
 
       <div class="qs-modal-footer">
-        <button type="button" class="button" id="qs-reset" title = "RESET">
-          <div class="flex gap-2">
+        <button type="button" class="button cursor-pointer" id="qs-reset" title = "RESET">
+          <div class="flex gap-2 items-center justify-center">
             <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M7.5 15.5C6.5625 15.5 5.68438 15.3219 4.86563 14.9656C4.04688 14.6094 3.33438 14.1281 2.72813 13.5219C2.12188 12.9156 1.64062 12.2031 1.28438 11.3844C0.928125 10.5656 0.75 9.68751 0.75 8.75001C0.75 8.53751 0.821875 8.35938 0.965625 8.21563C1.10938 8.07188 1.2875 8.00001 1.5 8.00001C1.7125 8.00001 1.89062 8.07188 2.03437 8.21563C2.17813 8.35938 2.25 8.53751 2.25 8.75001C2.25 10.2125 2.75937 11.4531 3.77812 12.4719C4.79688 13.4906 6.0375 14 7.5 14C8.9625 14 10.2031 13.4906 11.2219 12.4719C12.2406 11.4531 12.75 10.2125 12.75 8.75001C12.75 7.28751 12.2406 6.04688 11.2219 5.02813C10.2031 4.00938 8.9625 3.50001 7.5 3.50001H7.3875L8.025 4.13751C8.175 4.28751 8.24688 4.46251 8.24063 4.66251C8.23438 4.86251 8.1625 5.03751 8.025 5.18751C7.875 5.33751 7.69688 5.41563 7.49063 5.42188C7.28438 5.42813 7.10625 5.35626 6.95625 5.20626L5.025 3.27501C4.875 3.12501 4.8 2.95001 4.8 2.75001C4.8 2.55001 4.875 2.37501 5.025 2.22501L6.95625 0.293759C7.10625 0.143759 7.28438 0.0718838 7.49063 0.0781338C7.69688 0.0843838 7.875 0.162509 8.025 0.312509C8.1625 0.462509 8.23438 0.637509 8.24063 0.837509C8.24688 1.03751 8.175 1.21251 8.025 1.36251L7.3875 2.00001H7.5C8.4375 2.00001 9.31563 2.17813 10.1344 2.53438C10.9531 2.89063 11.6656 3.37188 12.2719 3.97813C12.8781 4.58438 13.3594 5.29688 13.7156 6.11563C14.0719 6.93438 14.25 7.81251 14.25 8.75001C14.25 9.68751 14.0719 10.5656 13.7156 11.3844C13.3594 12.2031 12.8781 12.9156 12.2719 13.5219C11.6656 14.1281 10.9531 14.6094 10.1344 14.9656C9.31563 15.3219 8.4375 15.5 7.5 15.5Z" fill="#4A5565"/>
             </svg>
@@ -522,7 +529,17 @@ function downloadCSV() {
             </span> 
           </div>
         </button>
-        <button type="submit" class="button button-primary">UPLOAD AGENT CONFIG</button>
+        <button type="submit" class="button cursor-pointer " id="upload-agent-config">
+           <div class="flex justify-center items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.95 9.35L5.3375 7.7375C5.2 7.6 5.025 7.53125 4.8125 7.53125C4.6 7.53125 4.425 7.6 4.2875 7.7375C4.15 7.875 4.08125 8.05 4.08125 8.2625C4.08125 8.475 4.15 8.65 4.2875 8.7875L6.425 10.925C6.575 11.075 6.75 11.15 6.95 11.15C7.15 11.15 7.325 11.075 7.475 10.925L11.7125 6.6875C11.85 6.55 11.9188 6.375 11.9188 6.1625C11.9188 5.95 11.85 5.775 11.7125 5.6375C11.575 5.5 11.4 5.43125 11.1875 5.43125C10.975 5.43125 10.8 5.5 10.6625 5.6375L6.95 9.35ZM8 15.5C6.9625 15.5 5.9875 15.3031 5.075 14.9094C4.1625 14.5156 3.36875 13.9813 2.69375 13.3063C2.01875 12.6313 1.48438 11.8375 1.09063 10.925C0.696875 10.0125 0.5 9.0375 0.5 8C0.5 6.9625 0.696875 5.9875 1.09063 5.075C1.48438 4.1625 2.01875 3.36875 2.69375 2.69375C3.36875 2.01875 4.1625 1.48438 5.075 1.09063C5.9875 0.696875 6.9625 0.5 8 0.5C9.0375 0.5 10.0125 0.696875 10.925 1.09063C11.8375 1.48438 12.6313 2.01875 13.3063 2.69375C13.9813 3.36875 14.5156 4.1625 14.9094 5.075C15.3031 5.9875 15.5 6.9625 15.5 8C15.5 9.0375 15.3031 10.0125 14.9094 10.925C14.5156 11.8375 13.9813 12.6313 13.3063 13.3063C12.6313 13.9813 11.8375 14.5156 10.925 14.9094C10.0125 15.3031 9.0375 15.5 8 15.5ZM8 14C9.675 14 11.0938 13.4187 12.2563 12.2563C13.4187 11.0938 14 9.675 14 8C14 6.325 13.4187 4.90625 12.2563 3.74375C11.0938 2.58125 9.675 2 8 2C6.325 2 4.90625 2.58125 3.74375 3.74375C2.58125 4.90625 2 6.325 2 8C2 9.675 2.58125 11.0938 3.74375 12.2563C4.90625 13.4187 6.325 14 8 14Z" fill="white"/>
+          </svg>
+
+          <span>
+            UPLOAD AGENT CONFIG
+          </span>
+        </div>
+        </button>
       </div>
     </form>
   </div>
