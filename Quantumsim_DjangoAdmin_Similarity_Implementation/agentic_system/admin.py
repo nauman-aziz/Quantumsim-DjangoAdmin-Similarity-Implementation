@@ -21,13 +21,34 @@ class AgentAdmin(admin.ModelAdmin):
         "agent_uuid",
     )
     search_fields = ("name", "description", "agent_uuid")
-    # list_filter = ("available_to_users", "system_default")  # native filters still work
+    # list_filter = ("available_to_users", "system_default")
     change_list_template = "admin/agentic_system/agent/change_list.html"
+    change_form_template = "admin/agentic_system/agent/change_form.html"
+
+    fieldsets = (
+        ("Basic Config", {
+            "fields": (
+                "name",
+                "description",
+                "available_to_users",
+                "system_default",
+                'llm',
+                'bypass',
+                'agent_prompt_template'
+            ),
+        }),
+    )
 
     def changelist_view(self, request, extra_context=None):
         if request.GET.get("download") == "csv":
             return self.download_csv(request)
         return super().changelist_view(request, extra_context)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['llm_choices'] = Agent.LLM_CHOICES
+        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)    
+
     
     def get_urls(self):
         urls = super().get_urls()

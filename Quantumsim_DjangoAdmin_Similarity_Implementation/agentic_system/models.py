@@ -3,11 +3,49 @@ from django.db import models
 
 
 class Agent(models.Model):
-    name = models.CharField(max_length=150, unique=True)
+    name = models.CharField(max_length=150, unique=False)
     available_to_users = models.BooleanField(default=True)
     system_default = models.BooleanField(default=False)
-    description = models.TextField(blank=True)
+    description = models.TextField()
     agent_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    # LLM choices
+    LLM_CHOICES = [
+        ('QS LLM Sharp Agent', 'QS LLM Sharp Agent'),
+        ('QS-LLM Fast','QS-LLM Fast'),
+        ('QS-LLM Sharp Base priority','QS-LLM Sharp Base priority'),
+        ('QS-LLM Sharp Hi Priority','QS-LLM Sharp Hi Priority'),
+        ('QS-LLM Smart','QS-LLM Smart'),
+        ('QS-LLM SmartDev','QS-LLM SmartDev'),
+        ('QS-LLM Smart Synovus Classification','QS-LLM Smart Synovus Classification'),
+        ('QS-LLM Smart Synovus','QS-LLM Smart Synovus'),
+        ('QS-LLM Sharp','QS-LLM Sharp')
+        # Add other LLM choices here if they exist
+    ]
+
+    AGENT_PROMPT_TEMPLATE_CHOICES = [
+        ('default_prompt', 'Default Prompt'),
+        # Add other template choices here if needed
+    ]
+
+    agent_prompt_template = models.CharField(
+        max_length=255,
+        choices=AGENT_PROMPT_TEMPLATE_CHOICES,
+        default='default_prompt',
+        verbose_name="Agent Prompt Template"
+    )
+    llm = models.CharField(
+        max_length=255,
+        choices=LLM_CHOICES,
+        default='QS-LLM Fast',
+        verbose_name="LLM"
+    )
+    bypass = models.BooleanField(
+        default=False,
+        verbose_name="Bypass",
+        help_text="Whether the original llm system prompt should be bypassed."
+    )
+
 
     class Meta:
         verbose_name = "Agent"

@@ -1,0 +1,411 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.Agent_Tabs { display: flex; flex-direction: column; gap: 16px; top: -50px; position: relative; }
+.custom-tabs { display:flex; gap: 4px; width: fit-content; flex-direction: row; height: 38px; align-items: center; padding: 4px; background: #F1F3F5; border-radius: 6px; }
+.custom-tabs li {
+  cursor: pointer;
+  width: fit-content; 
+  border-radius: 6px; 
+  padding-right: 8px; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 8px; 
+  color: #4A5565;
+  height: 30px;
+  font-weight: 400;
+  font-style: Helvetica Neue;
+  font-size: 14px;
+}
+.custom-tabs li.active { background: #FFFFFF; color: #101828;}
+.tab-panel { display: none; }
+.tab-panel.active { display: flex; border: 1px solid #EBE6E7; padding: 12px; background: white; border-radius: 6px; flex-direction: column; gap: 20px;}
+.tab-panel .agentNameContainer { display: flex; flex-direction: column; gap: 10px}
+.tab-panel .agentNameContainer .agentName { font-family: "Helvetica Neue"; font-weight: 500; padding-left: 4px; font-style: normal; font-size: 14px; line-height: 100%; letter-spacing: 0; vertical-align: middle; }
+.tab-panel .agentNameContainer .agentName:after { content: '*'; color: #C10007; }
+.tab-panel .agentNameContainer .agentNameInput {max-width: 756.5px; height: 38px; transform: rotate(0deg); opacity: 1; padding: 7px 12px; gap: 16px; border-radius: 6px; border-width: 1px; flex:1; min-width: '5px' border: 1px solid #EBE6E7 font-family: "Helvetica Neue"; font-weight: 400; font-style: normal; font-size: 14px; line-height: 18px; letter-spacing: 0; vertical-align: middle;}
+.tab-panel .AvailabletoUserSwitch .switch{position:relative;display:inline-block;width:60px;height:34px;}
+.tab-panel .AvailabletoUserSwitch .switch input{opacity:0;width:0;height:0;}
+.tab-panel .AvailabletoUserSwitch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:0.4s;border-radius:34px;}
+.tab-panel .AvailabletoUserSwitch .slider::before{position:absolute;content:"";height:26px;width:26px;left:4px;bottom:4px;background-color:white;transition:0.4s;border-radius:50%;}
+.tab-panel .AvailabletoUserSwitch input:checked+.slider{background-color:#4CAF50;}
+.tab-panel .AvailabletoUserSwitch input:checked+.slider::before{transform:translateX(26px);}
+.tab-panel .AvailabletoUserSwitch{display: flex; flex-direction: row; gap: 8px; height: fit-content; align-items: center;}
+.tab-panel .AgentDescriptionContainer { display: flex; flex-direction: column; gap: 10px}
+.basic-agent-config__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Labels */
+.basic-agent-config__label {
+  font-style: Helvetica Neue;  
+  font-size: 14px;
+  font-weight: 500;
+  color: #101828;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.basic-agent-config__label.required::after {
+  content: " *";
+  color: #ef4444;
+}
+
+.basic-agent-config__NameInput {
+     padding-top: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
+  font-style: Helvetica Neue;  
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  width: 756.5px;
+  height: 38px;
+  max-width: 80%;
+  transition: border-color 0.2s ease;
+}
+
+.basic-agent-config__NameInput:focus {
+    outline: none;
+  border-color: #3b82f6;
+}
+}
+
+/* Inputs & Textareas */
+.basic-agent-config__textarea,
+.basic-agent-config__select {
+  padding-top: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
+  font-style: Helvetica Neue;  
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  width: 756.5px;
+  height: 38px;
+  max-width: 80%;
+  transition: border-color 0.2s ease;
+}
+
+.basic-agent-config__LLMselect {
+  padding-top: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
+  font-style: Helvetica Neue;  
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  width: 756.5px;
+  height: 38px;
+  max-width: 80%;
+  transition: border-color 0.2s ease;
+}
+
+.basic-agent-config__LLMselect:focus{
+outline: none;
+  border-color: #3b82f6;
+}
+
+.basic-agent-config__agentprompt {
+  padding-top: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
+  font-style: Helvetica Neue;  
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  width: 756.5px;
+   height: 38px;
+  max-width: 80%%;
+  transition: border-color 0.2s ease;
+}
+
+.basic-agent-config__agentprompt:focus {
+ outline: none;
+  border-color: #3b82f6;
+}
+
+.basic-agent-config__input:focus,
+.basic-agent-config__textarea:focus,
+.basic-agent-config__select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.basic-agent-config__textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  padding-top: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
+  width: 756.5px;
+  max-width: 80%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+/* Select with icon buttons */
+.basic-agent-config__select-container {
+  position: relative;
+  display: flex;
+   height: 38px;
+  align-items: center;
+  gap: 16px;
+}
+
+.basic-agent-config__select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+   height: 38px;
+}
+
+.basic-agent-config__select-actions {
+  display: flex;
+  gap: 8px;
+   height: 38px;
+}
+
+.basic-agent-config__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.basic-agent-config__icon-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+/* Toggle Switch */
+.basic-agent-config__toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.basic-agent-config__toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 20px;
+}
+
+.basic-agent-config__toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.basic-agent-config__slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.basic-agent-config__slider::before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 1.5px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.basic-agent-config__toggle-switch input:checked + .basic-agent-config__slider {
+  background-color: #035289;
+}
+
+.basic-agent-config__toggle-switch input:checked + .basic-agent-config__slider::before {
+  transform: translateX(15px);
+}
+
+.basic-agent-config__toggle-label {
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.basic-agent-config__help-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.form-row { margin-bottom: 12px; }
+</style>
+
+<script>
+    const agentInputField = document.getElementById('agentNameField');
+    const availableUserToggle = document.getElementById('toggleSwitchUserAvailable');
+    if(availableUserToggle)
+    {
+    availableUserToggle.addEventListener('change',(event) => {
+    availableUserToggle.value = event.target.checked;
+    })
+    }
+    if(agentInputField)
+    {
+        agentInputField.addEventListener('change',(event) => {
+            agentInputField.value = event?.target?.value;
+        })
+    }
+document.addEventListener('DOMContentLoaded', function () {
+    const tabs = document.querySelectorAll('.custom-tabs li');
+    const panels = document.querySelectorAll('.tab-panel');
+
+    tabs.forEach((tab, idx) => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            panels.forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            panels[idx].classList.add('active');
+        });
+    });
+
+    // Open first tab by default
+    if (tabs.length > 0) tabs[0].click();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="Agent_Tabs">
+
+    <ul class="custom-tabs">
+        <li>Basic Config</li>
+        <li>Pick Tools</li>
+        <li>Agent Manager Configs</li>
+        <li>Advance Configs</li>
+        <li>Permissions</li>
+        <li>Bind Documents</li>
+        <li>Agent Testing</li>
+    </ul>
+
+    {# ---------------- Basic Config Tab ---------------- #}
+    <div class="tab-panel">
+         <div class="basic-agent-config__form-group">
+    <label for="basic-agent-config-name" class="basic-agent-config__label required">Agent Name</label>
+    <input
+      id="basic-agent-config-name"
+      class="basic-agent-config__NameInput"
+      type="text"
+      value="{{ adminform.form.name.value }}"
+    />
+    {{ adminform.form.name.errors }}
+  </div>
+
+  <div class="basic-agent-config__form-group">
+    <div class="basic-agent-config__toggle-container">
+      <label class="basic-agent-config__toggle-switch">
+        <input type="checkbox" id="basic-agent-config-make-available" value="{{ adminform.form.available_to_users.value }}" checked />
+        <span class="basic-agent-config__slider"></span>
+      </label>
+      <span class="basic-agent-config__toggle-label">Make available to Users</span>
+    </div>
+  </div>
+
+  <div class="basic-agent-config__form-group">
+    <label for="basic-agent-config-description" class="basic-agent-config__label required">Description</label>
+    <textarea
+      id="basic-agent-config-description"
+      class="basic-agent-config__textarea"
+      rows="4"
+    >{{adminform.form.description.value}}</textarea>
+  </div>
+
+  <div class="basic-agent-config__form-group">
+    <label for="basic-agent-config-agent-prompt" class="basic-agent-config__label required">Agent Prompt Template</label>
+    <div class="basic-agent-config__select-container">
+      <select id="basic-agent-config-agent-prompt" class="basic-agent-config__agentprompt">
+        <option value=""></option>
+      </select>
+      <div class="basic-agent-config__select-actions">
+        <button type="button" class="basic-agent-config__icon-btn" title="Edit"><svg width="15" height="14" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M2.25 12.25H3.31875L10.65 4.91875L9.58125 3.85L2.25 11.1812V12.25ZM1.5 13.75C1.2875 13.75 1.10938 13.6781 0.965625 13.5344C0.821875 13.3906 0.75 13.2125 0.75 13V11.1812C0.75 10.9812 0.7875 10.7906 0.8625 10.6094C0.9375 10.4281 1.04375 10.2688 1.18125 10.1313L10.65 0.68125C10.8 0.54375 10.9656 0.4375 11.1469 0.3625C11.3281 0.2875 11.5188 0.25 11.7188 0.25C11.9187 0.25 12.1125 0.2875 12.3 0.3625C12.4875 0.4375 12.65 0.55 12.7875 0.7L13.8188 1.75C13.9688 1.8875 14.0781 2.05 14.1469 2.2375C14.2156 2.425 14.25 2.6125 14.25 2.8C14.25 3 14.2156 3.19062 14.1469 3.37187C14.0781 3.55312 13.9688 3.71875 13.8188 3.86875L4.36875 13.3188C4.23125 13.4563 4.07188 13.5625 3.89062 13.6375C3.70937 13.7125 3.51875 13.75 3.31875 13.75H1.5ZM10.1063 4.39375L9.58125 3.85L10.65 4.91875L10.1063 4.39375Z" fill="#99A1AF"/>
+</svg>
+</button>
+        <button type="button" class="basic-agent-config__icon-btn" title="Add"><svg width="11" height="12" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M4.75 6.75H1C0.7875 6.75 0.609375 6.67812 0.465625 6.53438C0.321875 6.39062 0.25 6.2125 0.25 6C0.25 5.7875 0.321875 5.60938 0.465625 5.46562C0.609375 5.32188 0.7875 5.25 1 5.25H4.75V1.5C4.75 1.2875 4.82188 1.10938 4.96562 0.965625C5.10938 0.821875 5.2875 0.75 5.5 0.75C5.7125 0.75 5.89062 0.821875 6.03438 0.965625C6.17812 1.10938 6.25 1.2875 6.25 1.5V5.25H10C10.2125 5.25 10.3906 5.32188 10.5344 5.46562C10.6781 5.60938 10.75 5.7875 10.75 6C10.75 6.2125 10.6781 6.39062 10.5344 6.53438C10.3906 6.67812 10.2125 6.75 10 6.75H6.25V10.5C6.25 10.7125 6.17812 10.8906 6.03438 11.0344C5.89062 11.1781 5.7125 11.25 5.5 11.25C5.2875 11.25 5.10938 11.1781 4.96562 11.0344C4.82188 10.8906 4.75 10.7125 4.75 10.5V6.75Z" fill="#99A1AF"/>
+</svg>
+</button>
+        <button type="button" class="basic-agent-config__icon-btn" title="View"><svg width="17" height="12" viewBox="0 0 17 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.50005 9C9.43755 9 10.2344 8.67188 10.8907 8.01562C11.5469 7.35938 11.875 6.5625 11.875 5.625C11.875 4.6875 11.5469 3.89062 10.8907 3.23438C10.2344 2.57812 9.43755 2.25 8.50005 2.25C7.56255 2.25 6.76567 2.57812 6.10942 3.23438C5.45317 3.89062 5.12505 4.6875 5.12505 5.625C5.12505 6.5625 5.45317 7.35938 6.10942 8.01562C6.76567 8.67188 7.56255 9 8.50005 9ZM8.50005 7.65C7.93755 7.65 7.45942 7.45313 7.06567 7.05938C6.67192 6.66563 6.47505 6.1875 6.47505 5.625C6.47505 5.0625 6.67192 4.58437 7.06567 4.19063C7.45942 3.79688 7.93755 3.6 8.50005 3.6C9.06255 3.6 9.54067 3.79688 9.93442 4.19063C10.3282 4.58437 10.5251 5.0625 10.5251 5.625C10.5251 6.1875 10.3282 6.66563 9.93442 7.05938C9.54067 7.45313 9.06255 7.65 8.50005 7.65ZM8.50005 11.25C6.82505 11.25 5.29692 10.8 3.91567 9.9C2.53442 9 1.4438 7.8125 0.643799 6.3375C0.581299 6.225 0.534424 6.10938 0.503174 5.99063C0.471924 5.87188 0.456299 5.75 0.456299 5.625C0.456299 5.5 0.471924 5.37813 0.503174 5.25938C0.534424 5.14062 0.581299 5.025 0.643799 4.9125C1.4438 3.4375 2.53442 2.25 3.91567 1.35C5.29692 0.45 6.82505 0 8.50005 0C10.175 0 11.7032 0.45 13.0844 1.35C14.4657 2.25 15.5563 3.4375 16.3563 4.9125C16.4188 5.025 16.4657 5.14062 16.4969 5.25938C16.5282 5.37813 16.5438 5.5 16.5438 5.625C16.5438 5.75 16.5282 5.87188 16.4969 5.99063C16.4657 6.10938 16.4188 6.225 16.3563 6.3375C15.5563 7.8125 14.4657 9 13.0844 9.9C11.7032 10.8 10.175 11.25 8.50005 11.25ZM8.50005 9.75C9.91255 9.75 11.2094 9.37813 12.3907 8.63437C13.5719 7.89062 14.475 6.8875 15.1 5.625C14.475 4.3625 13.5719 3.35938 12.3907 2.61562C11.2094 1.87187 9.91255 1.5 8.50005 1.5C7.08755 1.5 5.79067 1.87187 4.60942 2.61562C3.42817 3.35938 2.52505 4.3625 1.90005 5.625C2.52505 6.8875 3.42817 7.89062 4.60942 8.63437C5.79067 9.37813 7.08755 9.75 8.50005 9.75Z" fill="#99A1AF"/>
+</svg>
+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="basic-agent-config__form-group">
+    <label for="basic-agent-config-llm" class="basic-agent-config__label required">LLM</label>
+    <select id="basic-agent-config-llm" value="{{adminform.form.llm.value}}" class="basic-agent-config__LLMselect">
+       {% for value, label in llm_choices %}
+    <option value="{{ value }}">{{ label }}</option>
+  {% endfor %}
+    </select>
+  </div>
+
+  <div class="basic-agent-config__form-group">
+    <div class="basic-agent-config__toggle-container">
+      <label class="basic-agent-config__toggle-switch">
+        <input type="checkbox" id="basic-agent-config-bypass" value="{{adminform.form.bypass.value}}" checked />
+        <span class="basic-agent-config__slider"></span>
+      </label>
+      <span class="basic-agent-config__toggle-label">Bypass</span>
+    </div>
+    <div class="basic-agent-config__help-text">Whether the original LLM system prompt should be bypassed.</div>
+  </div>
+    </div>
+
+    {# ---------------- Empty Tabs for now ---------------- #}
+    <div class="tab-panel"><h2>Pick Tools</h2><p>Coming soon…</p></div>
+    <div class="tab-panel"><h2>Agent Manager Configs</h2><p>Coming soon…</p></div>
+    <div class="tab-panel"><h2>Advance Configs</h2><p>Coming soon…</p></div>
+    <div class="tab-panel"><h2>Permissions</h2><p>Coming soon…</p></div>
+    <div class="tab-panel"><h2>Bind Documents</h2><p>Coming soon…</p></div>
+    <div class="tab-panel"><h2>Agent Testing</h2><p>Coming soon…</p></div>
+
+    {# Submit buttons #}
+</div>
+{% endblock %}
