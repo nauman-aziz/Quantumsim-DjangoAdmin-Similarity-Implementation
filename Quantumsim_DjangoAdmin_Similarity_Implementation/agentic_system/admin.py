@@ -354,8 +354,8 @@ class ToolAdmin(admin.ModelAdmin):
 
 @admin.register(Label)
 class LabelAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
-    search_fields = ("name", "description")
+    list_display = ("name", "description", "label_uuid")
+    search_fields = ("name", "description", "label_uuid")
 
 
 @admin.register(PromptTemplate)
