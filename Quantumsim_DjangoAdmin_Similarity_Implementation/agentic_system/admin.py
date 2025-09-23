@@ -356,6 +356,9 @@ class ToolAdmin(admin.ModelAdmin):
 class LabelAdmin(admin.ModelAdmin):
     list_display = ("name", "description", "label_uuid")
     search_fields = ("name", "description", "label_uuid")
+    search_fields = ("name", "description", "agent_uuid")
+    # list_filter = ("available_to_users", "system_default")  # native filters still work
+    change_list_template = "admin/agentic_system/agent/change_list.html"
 
 
 @admin.register(PromptTemplate)

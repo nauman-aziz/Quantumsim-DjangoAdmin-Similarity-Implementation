@@ -363,6 +363,7 @@ function downloadCSV() {
 {% endblock %}
 
 {% block search %}
+{% if opts.model_name != 'label' %}
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%;">
   {{ block.super }}
   <div class="flex gap-2">
@@ -402,6 +403,9 @@ function downloadCSV() {
     </button>
   </div>
 </div>
+{% else %}
+{{ block.super }}
+{% endif %}
 {% endblock %}
 
 {% block content %}
