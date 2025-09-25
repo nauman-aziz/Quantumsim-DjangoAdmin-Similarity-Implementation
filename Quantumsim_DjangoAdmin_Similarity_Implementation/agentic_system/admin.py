@@ -9,6 +9,8 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import path, reverse
 from django.http import HttpResponse
+from agentic_system.models import Tool # adjust to your actual Tool model
+from agentic_system.tables import ToolTable
 
 
 @admin.register(Agent)
@@ -39,6 +41,12 @@ class AgentAdmin(admin.ModelAdmin):
         }),
     )
 
+
+    def get_urls(self):
+        urls = super().get_urls()
+        # Filter out the default /history/ URL
+        return [url for url in urls if not str(url.pattern).endswith('/history/')]
+
     def changelist_view(self, request, extra_context=None):
         if request.GET.get("download") == "csv":
             return self.download_csv(request)
@@ -47,7 +55,19 @@ class AgentAdmin(admin.ModelAdmin):
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['llm_choices'] = Agent.LLM_CHOICES
+        extra_context['agent_prompt_template_choices'] = Agent.AGENT_PROMPT_TEMPLATE_CHOICES
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)    
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        tool_table = ToolTable(Tool.objects.all())  # or filtered set
+        extra_context = extra_context or {}
+        extra_context['tool_table'] = tool_table
+        extra_context['custom_history_url'] = f"/admin/agentic_system/agent/{object_id}/history/"
+        column_names = [col.header for col in tool_table.columns if col.name != "select"]
+        extra_context["filter_fields"] = column_names
+        return super().change_view(
+        request, object_id, form_url, extra_context=extra_context
+        )    
 
     
     def get_urls(self):
@@ -315,6 +335,23 @@ class AgentAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(reverse("admin:agentic_system_agent_changelist"))
 
 
+@admin.register(Tool)
+class ToolAdmin(admin.ModelAdmin):
+    list_display = ('name', 'active', 'signature', 'description', 'labels', 'associated_agents')
+    list_filter = ('active', 'labels', 'associated_agents')  # You can add more filters
+    search_fields = ('name', 'signature', 'description', 'labels', 'associated_agents')
+    list_per_page = 10  # Pagination
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        q = request.GET.get('q', '')
+        extra_context = extra_context or {}
+        extra_context['search_query'] = q
+        table = ToolTable()
+        column_names = [col.name for col in table.columns]
+
+        extra_context["filter_fields"] = column_names
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
+
 @admin.register(Label)
 class LabelAdmin(admin.ModelAdmin):
     list_display = ("name", "description")
@@ -330,12 +367,6 @@ class PromptTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(SecretStore)
 class SecretStoreAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name", "description")
-
-
-@admin.register(Tool)
-class ToolAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name", "description")
 

@@ -24,14 +24,14 @@ class Agent(models.Model):
     ]
 
     AGENT_PROMPT_TEMPLATE_CHOICES = [
-        ('default_prompt', 'Default Prompt'),
+        ('oracle procurement agent system prompt', 'oracle procurement agent system prompt'),
         # Add other template choices here if needed
     ]
 
     agent_prompt_template = models.CharField(
         max_length=255,
         choices=AGENT_PROMPT_TEMPLATE_CHOICES,
-        default='default_prompt',
+        default='oracle procurement agent system prompt',
         verbose_name="Agent Prompt Template"
     )
     llm = models.CharField(
@@ -53,7 +53,7 @@ class Agent(models.Model):
         ordering = ["name"]
 
     def __str__(self):
-        return self.name
+        return self.name  
 
 
 class Label(models.Model):
@@ -102,7 +102,11 @@ class SecretStore(models.Model):
 
 class Tool(models.Model):
     name = models.CharField(max_length=150, unique=True)
+    active = models.BooleanField(default=True)
+    signature = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    labels = models.CharField(max_length=200)        
+    associated_agents = models.CharField(max_length=150, unique=False)
 
     class Meta:
         verbose_name = "Tool"

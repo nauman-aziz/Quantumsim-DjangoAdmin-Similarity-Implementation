@@ -1,11 +1,352 @@
 {% extends "admin/change_form.html" %}
 {% load i18n admin_urls static admin_modify %}
-
+{% load render_table from django_tables2 %}
 {% block extrahead %}
 {{ block.super }}
 <style>
-.Agent_Tabs { display: flex; flex-direction: column; gap: 16px; top: -50px; position: relative; }
-.custom-tabs { display:flex; gap: 4px; width: fit-content; flex-direction: row; height: 38px; align-items: center; padding: 4px; background: #F1F3F5; border-radius: 6px; }
+  /* column_selector.css */
+
+.column-selector-panel h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 10px;
+}
+
+/* Filter row with selects + input + add button */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  margin-bottom: 16px;
+}
+#filters-container{
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  height: fit-content;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-row select {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  min-width: 120px;
+}
+
+.filter-value {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+}
+
+.filter-value_Container {
+  flex: 1;
+}
+
+.add-filter-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: -7px;
+  position: relative;
+}
+
+.add-filter-btn:hover {
+  background: #d4e8f5;
+}
+
+/* Column checkboxes */
+.column-checkboxes {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.column-checkboxes label {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.fieldsLabel {
+  font-style: Helvetica Neue;
+  font-size: 14px;
+  font-weight: 400;
+  color: #4A5565;
+}
+
+.select-all-label {
+  font-style: Helvetica Neue;
+  font-size: 14px;
+  font-weight: 400;
+  color: #4A5565; /* purple-ish */
+}
+
+.column-checkboxes input[type="checkbox"] {
+  accent-color: #035289;
+  width: 14px;
+  height: 14px;
+}
+
+/* Buttons */
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.action-buttons button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  width: 50%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+#reset-filters {
+  background: #f9fafb;
+  border: 1px solid #cbd5e0;
+  color: #4a5568;
+}
+
+#reset-filters:hover {
+  background: #edf2f7;
+}
+
+#apply-filters {
+  background: #035289;
+  color: #fff;
+  border: 1px solid #035289;
+}
+
+#apply-filters:hover {
+  background: #023f66;
+}
+
+
+/* ========== Container Styling ========== */
+.PickToolsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.PickToolsHeader {
+  font-style: Helvetica Neue;
+  font-weight: 500;
+  font-size: 14px;
+  color: #101828;
+}
+.PickToolsHeader::after{
+  content: '*';
+  color: #C10007;
+}
+.PickToolsTableandFilters {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 100%;
+}
+.FilterSection{
+width: 40%;
+}
+.TableandSearchContainer {
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  border: 1px solid #EBE6E7;
+  width: 60%;
+  padding: 1px;
+  height: 622px;
+}
+li a[href$="/history/"] {
+    display: none !important;
+}
+.SearchContainerPickTools {
+  display: flex;
+  align-items: center;
+  height: 70px;
+  border-bottom: 1px solid #EBE6E7;
+  padding: 16px;
+}
+.PickToolsSearchBox {
+  display: flex;
+  flex-direction: row;
+  padding-left: 12px;
+  padding-right: 12px;
+  gap: 12px;
+  border: 1px solid #EBE6E7;
+  border-radius: 6px;
+  height: 38px;
+  align-items: center;
+  width: 40%;
+  @media screen and (min-width: 1280px)
+  {
+    width: 384px;
+  }
+}
+.PickToolsSearchInput {
+  width: 30%;
+ height: 38px;
+ font-style: Helvetica Neue;
+ outline: none;
+ font-weight: 400;
+ font-size: 14px;
+ color: #4A5565;
+  @media screen and (min-width: 1280px)
+  {
+    width: 370px;
+  }
+}
+.PickToolsSearchInput:focus{
+  outline: none;
+}
+
+/* ========== Table Base ========== */
+.table-container {
+  width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+.table-container table {
+   border-collapse: collapse;
+           width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;  
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+/* ========== Header Styling ========== */
+.table-container thead {
+ 
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.table-container th {
+  padding: 12px 10px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #444;
+  border-bottom: 1px solid #ddd;
+}
+
+/* ========== Cell Styling ========== */
+.table-container td {
+  padding: 10px 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+/* ========== Row Striping & Hover ========== */
+.table-container tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.table-container tr:hover {
+  background-color: #f1f5fc;
+}
+
+/* ========== Checkbox Column ========== */
+.table-container td input[type="checkbox"],
+.table-container th input[type="checkbox"] {
+  display: block;
+  margin: auto;
+}
+
+/* ========== Pagination / Info Styling (Optional) ========== */
+.table-container .pagination {
+  margin-top: 12px;
+  text-align: right;
+  font-size: 13px;
+  color: #555;
+}
+
+/* ========== Optional: Search Input ========== */
+.table-search {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  width: 280px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.TabsandBtns {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  height: fit-content;
+  align-items: center;
+}
+.Agent_Tabs { display: flex; flex-direction: column; gap: 16px; top: -20px; position: relative; }
+.BtnsWrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+.AddToolBtn {
+  display: flex;
+  flex-direction: row;
+  min-height: 38px;
+  height: auto;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #EBE6E7;
+  border-radius: 6px;
+  padding: 10px;
+  width: 189px;
+}
+.HistoryBtn {
+  display: flex;
+  flex-direction: row;
+  min-height: 38px;
+  height: auto;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #EBE6E7;
+  border-radius: 6px;
+  padding: 10px;
+  width: 107px;
+}
+.HistoryBtnLabel {
+   font-style: Helvetica Neue;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5565;
+}
+
+.AddToolBtnLabel{
+  font-style: Helvetica Neue;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5565;
+}
+.custom-tabs { display:flex; min-height: 38px; height: auto; gap: 4px; width: 60%;
+  overflow-x: auto; @media screen and (min-width:1024px) { width: fit-content; } overflow-x: auto; flex-direction: row; align-items: center; padding: 4px; background: #F1F3F5; border-radius: 6px; }
 .custom-tabs li {
   cursor: pointer;
   width: fit-content; 
@@ -16,7 +357,8 @@
   align-items: center;
   padding-left: 8px; 
   color: #4A5565;
-  height: 30px;
+  min-height: 38px; 
+  height: auto;
   font-weight: 400;
   font-style: Helvetica Neue;
   font-size: 14px;
@@ -40,6 +382,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.BasicConfigForm{
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* Labels */
@@ -275,7 +622,285 @@ outline: none;
 .form-row { margin-bottom: 12px; }
 </style>
 
-<script>
+<script defer>
+  document.addEventListener("DOMContentLoaded", function () {
+  const saveBtn = document.querySelector("#customSaveBtn"); // your custom save button
+  const form = document.querySelector("form"); // Django admin's main form
+
+  if (saveBtn && form) {
+    saveBtn.addEventListener("click", () => {
+      // Create hidden input to mimic Django's native "Save" action
+      let hiddenSave = document.createElement("input");
+      hiddenSave.type = "hidden";
+      hiddenSave.name = "_save";   // important for Django to detect save action
+      hiddenSave.value = "Save";
+
+      form.appendChild(hiddenSave);
+
+      // Trigger the form submission
+      form.submit();
+    });
+  }
+});
+document.addEventListener("DOMContentLoaded", function() {
+  const addBtn = document.querySelector('.AddToolBtn');
+  const tabs = document.querySelectorAll('.custom-tabs li');
+
+  if (!addBtn || tabs.length === 0) return;
+
+  // hide by default
+  addBtn.style.display = 'none';
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.id === 'PickTools') {
+        addBtn.style.display = 'flex';
+      } else {
+        addBtn.style.display = 'none';
+      }
+    });
+  });
+});
+
+
+
+// Table Selection
+
+document.addEventListener('DOMContentLoaded', function () {
+  const table = document.querySelector('.table');
+  if (table) {
+    const tableRows = document.querySelectorAll('tbody tr');
+    const selectAllCheckbox = document.querySelector('thead tr th input[type="checkbox"]');
+
+    tableRows.forEach(row => {
+      const firstCell = row.querySelector('td');
+      const input = firstCell.querySelector("input[type='checkbox']");
+
+      input.addEventListener('change', () => {
+        const checkedCount = document.querySelectorAll('tbody tr td input[type="checkbox"]:checked').length;
+
+        if (checkedCount === tableRows.length) {
+          selectAllCheckbox.checked = true;  
+        } else {
+          selectAllCheckbox.checked = false; 
+        }
+      });
+    });
+
+    selectAllCheckbox.addEventListener('change', () => {
+      const isChecked = selectAllCheckbox.checked;
+      tableRows.forEach(row => {
+        const input = row.querySelector("td input[type='checkbox']");
+        input.checked = isChecked;
+      });
+    });
+  }
+});
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const table = document.querySelector('.table');
+  if(table)
+  {
+    const selectAllCheckbox = document.querySelector('thead tr th input[type="checkbox"]')
+    selectAllCheckbox.addEventListener('change',(event) => {
+    if(event?.target?.checked)
+    {
+      const tableRows = document.querySelectorAll('tbody tr');
+      tableRows?.forEach(row => {
+        const firstCell = row.querySelector("td");
+        const input = firstCell.querySelector("input[type='checkbox']");
+        input.checked = true;
+      })
+    }
+    else
+    {
+      const tableRows = document.querySelectorAll('tbody tr');
+      tableRows?.forEach(row => {
+        const firstCell = row.querySelector("td");
+        const input = firstCell.querySelector("input[type='checkbox']");
+        input.checked = false;
+      })
+    }
+    })
+  }
+
+})
+
+// Filters Panel Tools Section
+
+
+// Add filter row functionality
+const handleAddFilter = (e) => {
+  if (e.target.closest('.add-filter-btn')) {
+    e.preventDefault();
+    const container = document.getElementById('filters-container');
+    const firstRow = container.querySelector('.filter-row');
+    const newRow = firstRow.cloneNode(true);
+    
+    newRow.querySelectorAll('select, input').forEach(el => {
+      if (el.tagName === 'INPUT') el.value = '';
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    });
+    
+    container.appendChild(newRow);
+  }
+}
+
+
+function toggleColumn(columnIndex, show) {
+  const table = document.querySelector('.table');
+  console.log("Table",table);
+  if (!table) return;
+  console.log("Col Index",columnIndex);
+  const colIndex = parseInt(columnIndex) ; 
+  const cells = table.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
+  cells.forEach(cell => {
+    cell.style.display = show ? '' : 'none';
+  });
+}
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAllCheckbox = document.getElementById('select-all-columns');
+  const columnToggles = document.querySelectorAll('.column-toggle');
+  
+  // Select all toggle
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      columnToggles.forEach(toggle => {
+        toggle.checked = this.checked;
+        toggleColumn(toggle.dataset.column, this.checked);
+      });
+    });
+  }
+  
+  // Individual column toggles
+  columnToggles.forEach(toggle => {
+    toggle.addEventListener('change', function() {
+      toggleColumn(this.dataset.column, this.checked);
+      
+      // Update select all checkbox
+      const allChecked = Array.from(columnToggles).every(t => t.checked);
+      selectAllCheckbox.checked = allChecked;
+    });
+  });
+});
+
+
+
+window.applyFilters = function() {
+  console.log("here");
+  const table = document.querySelector('.table-container table');
+  if (!table) return;
+  
+  const rows = table.querySelectorAll('tbody tr');
+  console.log("Rows",rows);
+  const filters = [];
+  
+  document.querySelectorAll('.filter-row').forEach(row => {
+    const column = row.querySelector('.filter-column').value;
+    const operator = row.querySelector('.filter-operator').value;
+    const value = row.querySelector('.filter-value').value.toLowerCase();
+    
+    if (column !== '' && operator && (value || operator === 'empty' || operator === 'not_empty')) {
+      filters.push({ column: parseInt(column), operator, value });
+    }
+  });
+  
+  rows.forEach(row => {
+    let showRow = true;
+    
+    filters.forEach(filter => {
+      const cell = row.cells[filter.column+1];
+      if (!cell) return;
+      
+      const cellText = cell.textContent.toLowerCase().trim();
+      const cellValue = parseFloat(cellText) || 0;
+      
+      switch (filter.operator) {
+        case 'include':
+          if (!cellText.includes(filter.value)) showRow = false;
+          break;
+        case 'exclude':
+          if (cellText.includes(filter.value)) showRow = false;
+          break;
+        case 'lt':
+          if (cellValue >= parseFloat(filter.value)) showRow = false;
+          break;
+        case 'lte':
+          if (cellValue > parseFloat(filter.value)) showRow = false;
+          break;
+        case 'gt':
+          if (cellValue <= parseFloat(filter.value)) showRow = false;
+          break;
+        case 'gte':
+          if (cellValue < parseFloat(filter.value)) showRow = false;
+          break;
+        case 'empty':
+          if (cellText !== '') showRow = false;
+          break;
+        case 'not_empty':
+          if (cellText === '') showRow = false;
+          break;
+      }
+    });
+    
+    row.style.display = showRow ? '' : 'none';
+  });
+};
+
+const resetFilters = function() {
+  document.querySelectorAll('.filter-column, .filter-operator, .filter-value').forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    if (el.tagName === 'INPUT') el.value = '';
+  });
+  
+  const table = document.querySelector('.table');
+  if (table) {
+    table.querySelectorAll('tbody tr').forEach(row => {
+      row.style.display = '';
+    });
+  }
+  
+  // Remove extra filter rows
+  const container = document.getElementById('filters-container');
+  const filterRows = container.querySelectorAll('.filter-row');
+  for (let i = 1; i < filterRows.length; i++) {
+    filterRows[i].remove();
+  }
+};
+
+//
+
+  const handleSearchToolTable = (event) => {
+  document.querySelector('.PickToolsSearchInput').addEventListener('keypress', function(event) {
+    console.log("evebt",event.keyCode);
+    if (event.keyCode === 13) {
+        let searchQuery = event.target.value.toLowerCase(); // Get search query in lowercase
+        console.log("Search Query",searchQuery);
+        let tableRows = document.querySelectorAll('.table-container table tbody tr'); // Get all rows
+        console.log("Table rows",tableRows);
+        tableRows.forEach(row => {
+            let columns = row.querySelectorAll('td'); // Get all columns in the row
+            let match = false;
+
+            // Check if any of the columns contain the search query
+            columns.forEach(column => {
+                if (column.textContent.toLowerCase().includes(searchQuery)) {
+                    match = true;
+                }
+            });
+
+            // Show or hide the row based on whether it matches the search query
+            row.style.display = match ? '' : 'none';
+        });
+      }
+    });
+  
+  }
     const agentInputField = document.getElementById('agentNameField');
     const availableUserToggle = document.getElementById('toggleSwitchUserAvailable');
     if(availableUserToggle)
@@ -311,23 +936,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
 {% block content %}
 <div id="content-main" class="Agent_Tabs">
-
+    <div class="TabsandBtns">
     <ul class="custom-tabs">
-        <li>Basic Config</li>
-        <li>Pick Tools</li>
-        <li>Agent Manager Configs</li>
-        <li>Advance Configs</li>
-        <li>Permissions</li>
-        <li>Bind Documents</li>
-        <li>Agent Testing</li>
+        <li id="BasicConfig">Basic Config</li>
+        <li id="PickTools">Pick Tools</li>
+        <li id="AgentManager">Agent Manager Configs</li>
+        <li id="AdvanceConfigs">Advance Configs</li>
+        <li id="Permissions">Permissions</li>
+        <li id="BindDocs">Bind Documents</li>
+        <li id="AgentTest">Agent Testing</li>
     </ul>
+    <div class="BtnsWrapper">
+      <button class="AddToolBtn" onclick="window.location.href='/admin/agentic_system/tool/add/';">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.25 6.75H1.5C1.2875 6.75 1.10938 6.67812 0.965625 6.53438C0.821875 6.39062 0.75 6.2125 0.75 6C0.75 5.7875 0.821875 5.60938 0.965625 5.46562C1.10938 5.32188 1.2875 5.25 1.5 5.25H5.25V1.5C5.25 1.2875 5.32188 1.10938 5.46562 0.965625C5.60938 0.821875 5.7875 0.75 6 0.75C6.2125 0.75 6.39062 0.821875 6.53438 0.965625C6.67812 1.10938 6.75 1.2875 6.75 1.5V5.25H10.5C10.7125 5.25 10.8906 5.32188 11.0344 5.46562C11.1781 5.60938 11.25 5.7875 11.25 6C11.25 6.2125 11.1781 6.39062 11.0344 6.53438C10.8906 6.67812 10.7125 6.75 10.5 6.75H6.75V10.5C6.75 10.7125 6.67812 10.8906 6.53438 11.0344C6.39062 11.1781 6.2125 11.25 6 11.25C5.7875 11.25 5.60938 11.1781 5.46562 11.0344C5.32188 10.8906 5.25 10.7125 5.25 10.5V6.75Z" fill="#4A5565"/>
+</svg>
+        <label class="AddToolBtnLabel">ADD ANOTHER TOOL</label>
+      </button>
+     <button class="HistoryBtn" onclick="window.location.href='/admin/agentic_system/agent/{{ original.pk }}/history/'">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_9194_72736" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="18" height="18">
+<rect width="18" height="18" fill="#D9D9D9"/>
+</mask>
+<g mask="url(#mask0_9194_72736)">
+<path d="M9 16.5C8.0625 16.5 7.18438 16.3219 6.36563 15.9656C5.54688 15.6094 4.83438 15.1281 4.22813 14.5219C3.62188 13.9156 3.14062 13.2031 2.78438 12.3844C2.42813 11.5656 2.25 10.6875 2.25 9.75001C2.25 9.53751 2.32187 9.35938 2.46562 9.21563C2.60938 9.07188 2.7875 9.00001 3 9.00001C3.2125 9.00001 3.39062 9.07188 3.53437 9.21563C3.67813 9.35938 3.75 9.53751 3.75 9.75001C3.75 11.2125 4.25937 12.4531 5.27812 13.4719C6.29688 14.4906 7.5375 15 9 15C10.4625 15 11.7031 14.4906 12.7219 13.4719C13.7406 12.4531 14.25 11.2125 14.25 9.75001C14.25 8.28751 13.7406 7.04688 12.7219 6.02813C11.7031 5.00938 10.4625 4.50001 9 4.50001H8.8875L9.525 5.13751C9.675 5.28751 9.74688 5.46251 9.74063 5.66251C9.73438 5.86251 9.6625 6.03751 9.525 6.18751C9.375 6.33751 9.19688 6.41563 8.99063 6.42188C8.78438 6.42813 8.60625 6.35626 8.45625 6.20626L6.525 4.27501C6.375 4.12501 6.3 3.95001 6.3 3.75001C6.3 3.55001 6.375 3.37501 6.525 3.22501L8.45625 1.29376C8.60625 1.14376 8.78438 1.07188 8.99063 1.07813C9.19688 1.08438 9.375 1.16251 9.525 1.31251C9.6625 1.46251 9.73438 1.63751 9.74063 1.83751C9.74688 2.03751 9.675 2.21251 9.525 2.36251L8.8875 3.00001H9C9.9375 3.00001 10.8156 3.17813 11.6344 3.53438C12.4531 3.89063 13.1656 4.37188 13.7719 4.97813C14.3781 5.58438 14.8594 6.29688 15.2156 7.11563C15.5719 7.93438 15.75 8.81251 15.75 9.75001C15.75 10.6875 15.5719 11.5656 15.2156 12.3844C14.8594 13.2031 14.3781 13.9156 13.7719 14.5219C13.1656 15.1281 12.4531 15.6094 11.6344 15.9656C10.8156 16.3219 9.9375 16.5 9 16.5Z" fill="#4A5565"/>
+</g>
+</svg>
+        <label class="HistoryBtnLabel">HISTORY</label>
+      </button>
+  </div>
+</div>
 
     {# ---------------- Basic Config Tab ---------------- #}
     <div class="tab-panel">
+
+      <form method="post" id="agent_form" novalidate class="BasicConfigForm">
+         {% csrf_token %}
          <div class="basic-agent-config__form-group">
     <label for="basic-agent-config-name" class="basic-agent-config__label required">Agent Name</label>
     <input
       id="basic-agent-config-name"
+      name="name"
       class="basic-agent-config__NameInput"
       type="text"
       value="{{ adminform.form.name.value }}"
@@ -338,7 +987,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="basic-agent-config__form-group">
     <div class="basic-agent-config__toggle-container">
       <label class="basic-agent-config__toggle-switch">
-        <input type="checkbox" id="basic-agent-config-make-available" value="{{ adminform.form.available_to_users.value }}" checked />
+        <input name="available_to_users" type="checkbox" id="basic-agent-config-make-available" {% if adminform.form.available_to_users.value %}checked{% endif %} />
         <span class="basic-agent-config__slider"></span>
       </label>
       <span class="basic-agent-config__toggle-label">Make available to Users</span>
@@ -348,6 +997,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="basic-agent-config__form-group">
     <label for="basic-agent-config-description" class="basic-agent-config__label required">Description</label>
     <textarea
+      name="description"
       id="basic-agent-config-description"
       class="basic-agent-config__textarea"
       rows="4"
@@ -357,8 +1007,10 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="basic-agent-config__form-group">
     <label for="basic-agent-config-agent-prompt" class="basic-agent-config__label required">Agent Prompt Template</label>
     <div class="basic-agent-config__select-container">
-      <select id="basic-agent-config-agent-prompt" class="basic-agent-config__agentprompt">
-        <option value=""></option>
+      <select name="agent_prompt_template" id="basic-agent-config-agent-prompt" class="basic-agent-config__agentprompt">
+      {% for value, label in agent_prompt_template_choices %}
+    <option value="{{ value }}">{{ label }}</option>
+  {% endfor %}
       </select>
       <div class="basic-agent-config__select-actions">
         <button type="button" class="basic-agent-config__icon-btn" title="Edit"><svg width="15" height="14" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -379,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   <div class="basic-agent-config__form-group">
     <label for="basic-agent-config-llm" class="basic-agent-config__label required">LLM</label>
-    <select id="basic-agent-config-llm" value="{{adminform.form.llm.value}}" class="basic-agent-config__LLMselect">
+    <select name="llm" id="basic-agent-config-llm" value="{{adminform.form.llm.value}}" class="basic-agent-config__LLMselect">
        {% for value, label in llm_choices %}
     <option value="{{ value }}">{{ label }}</option>
   {% endfor %}
@@ -389,17 +1041,94 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="basic-agent-config__form-group">
     <div class="basic-agent-config__toggle-container">
       <label class="basic-agent-config__toggle-switch">
-        <input type="checkbox" id="basic-agent-config-bypass" value="{{adminform.form.bypass.value}}" checked />
+        <input name="bypass" type="checkbox" id="basic-agent-config-bypass" {% if adminform.form.bypass.value %}checked{% endif %}/>
         <span class="basic-agent-config__slider"></span>
       </label>
       <span class="basic-agent-config__toggle-label">Bypass</span>
     </div>
     <div class="basic-agent-config__help-text">Whether the original LLM system prompt should be bypassed.</div>
   </div>
+</form>
     </div>
 
     {# ---------------- Empty Tabs for now ---------------- #}
-    <div class="tab-panel"><h2>Pick Tools</h2><p>Coming soon…</p></div>
+    <div class="tab-panel">
+    <!-- Insert the custom CSS here --><div class="PickToolsContainer"><span class="PickToolsHeader">Tools</span> <div class="PickToolsTableandFilters"> <div class="TableandSearchContainer"> <div class="SearchContainerPickTools">
+      <div class="PickToolsSearchBox">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12.7 13.75L7.975 9.025C7.6 9.325 7.16875 9.5625 6.68125 9.7375C6.19375 9.9125 5.675 10 5.125 10C3.7625 10 2.60938 9.52812 1.66563 8.58438C0.721875 7.64062 0.25 6.4875 0.25 5.125C0.25 3.7625 0.721875 2.60938 1.66563 1.66563C2.60938 0.721875 3.7625 0.25 5.125 0.25C6.4875 0.25 7.64062 0.721875 8.58438 1.66563C9.52812 2.60938 10 3.7625 10 5.125C10 5.675 9.9125 6.19375 9.7375 6.68125C9.5625 7.16875 9.325 7.6 9.025 7.975L13.75 12.7L12.7 13.75ZM5.125 8.5C6.0625 8.5 6.85938 8.17188 7.51562 7.51562C8.17188 6.85938 8.5 6.0625 8.5 5.125C8.5 4.1875 8.17188 3.39062 7.51562 2.73438C6.85938 2.07812 6.0625 1.75 5.125 1.75C4.1875 1.75 3.39062 2.07812 2.73438 2.73438C2.07812 3.39062 1.75 4.1875 1.75 5.125C1.75 6.0625 2.07812 6.85938 2.73438 7.51562C3.39062 8.17188 4.1875 8.5 5.125 8.5Z" fill="#99A1AF"/>
+</svg>
+    <input type="text" class="PickToolsSearchInput" placeholder="Type to search" onchange="handleSearchToolTable(event)"/>
+      </div>
+</div> 
+    {% if tool_table %}
+                {% render_table tool_table %}
+            {% else %}
+                <p>No tools found.</p>
+            {% endif %} </div> <div class="FilterSection">  <div id="column-selector-panel" class="column-selector-panel">
+    <h3>Filter</h3>
+    <div id="filters-container">
+      <div class="filter-row">
+        <select class="filter-column" style="display: block; width: auto;">
+  <option value="">Column</option>
+  {% for field in filter_fields %}
+    {% if field != "select" %}
+      <option value="{{ forloop.counter0 }}">{{ field|title }}</option>
+    {% endif %}
+  {% endfor %}
+</select>
+        <select class="filter-operator">
+          <option value="include">Include</option>
+          <option value="exclude">Exclude</option>
+          <option value="lt">Less Than</option>
+          <option value="lte">≤</option>
+          <option value="gt">Greater Than</option>
+          <option value="gte">≥</option>
+          <option value="empty">Is Empty</option>
+          <option value="not_empty">Not Empty</option>
+        </select>
+        <div class="filter-value_Container">
+        <input type="text" class="filter-value" placeholder="Value" />
+        </div>
+      </div>
+        <button type="button" class="add-filter-btn" onclick="handleAddFilter(event)">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 15H11V11H15V9H11V5H9V9H5V11H9V15ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z" fill="#035289"/>
+</svg>
+        </button>
+    </div>
+
+    <h3>Column Selection</h3>
+    <div class="column-checkboxes">
+      <label class="select-all-label">
+        <input type="checkbox" id="select-all-columns" class="SelectAllTools" checked />
+        Select All
+      </label>
+      {% for field in filter_fields %}
+        {% if field != "select" %}
+        <label class="fieldsLabel">
+          <input type="checkbox" class="column-toggle" data-column="{{ forloop.counter0 }}" checked />
+          {{ field|title }}
+        </label>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="action-buttons">
+      <button class ="button" type="button" id="reset-filters" title="Reset" onclick="resetFilters()">
+          <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7.5 15.5C6.5625 15.5 5.68438 15.3219 4.86563 14.9656C4.04688 14.6094 3.33438 14.1281 2.72813 13.5219C2.12188 12.9156 1.64062 12.2031 1.28438 11.3844C0.928125 10.5656 0.75 9.68751 0.75 8.75001C0.75 8.53751 0.821875 8.35938 0.965625 8.21563C1.10938 8.07188 1.2875 8.00001 1.5 8.00001C1.7125 8.00001 1.89062 8.07188 2.03437 8.21563C2.17813 8.35938 2.25 8.53751 2.25 8.75001C2.25 10.2125 2.75937 11.4531 3.77812 12.4719C4.79688 13.4906 6.0375 14 7.5 14C8.9625 14 10.2031 13.4906 11.2219 12.4719C12.2406 11.4531 12.75 10.2125 12.75 8.75001C12.75 7.28751 12.2406 6.04688 11.2219 5.02813C10.2031 4.00938 8.9625 3.50001 7.5 3.50001H7.3875L8.025 4.13751C8.175 4.28751 8.24688 4.46251 8.24063 4.66251C8.23438 4.86251 8.1625 5.03751 8.025 5.18751C7.875 5.33751 7.69688 5.41563 7.49063 5.42188C7.28438 5.42813 7.10625 5.35626 6.95625 5.20626L5.025 3.27501C4.875 3.12501 4.8 2.95001 4.8 2.75001C4.8 2.55001 4.875 2.37501 5.025 2.22501L6.95625 0.293759C7.10625 0.143759 7.28438 0.0718838 7.49063 0.0781338C7.69688 0.0843838 7.875 0.162509 8.025 0.312509C8.1625 0.462509 8.23438 0.637509 8.24063 0.837509C8.24688 1.03751 8.175 1.21251 8.025 1.36251L7.3875 2.00001H7.5C8.4375 2.00001 9.31563 2.17813 10.1344 2.53438C10.9531 2.89063 11.6656 3.37188 12.2719 3.97813C12.8781 4.58438 13.3594 5.29688 13.7156 6.11563C14.0719 6.93438 14.25 7.81251 14.25 8.75001C14.25 9.68751 14.0719 10.5656 13.7156 11.3844C13.3594 12.2031 12.8781 12.9156 12.2719 13.5219C11.6656 14.1281 10.9531 14.6094 10.1344 14.9656C9.31563 15.3219 8.4375 15.5 7.5 15.5Z" fill="#4A5565"/>
+          </svg>
+          <span>
+            RESET
+          </span>
+      </button>
+      <button onclick="applyFilters()" type="button" id="apply-filters"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.95 9.35L5.3375 7.7375C5.2 7.6 5.025 7.53125 4.8125 7.53125C4.6 7.53125 4.425 7.6 4.2875 7.7375C4.15 7.875 4.08125 8.05 4.08125 8.2625C4.08125 8.475 4.15 8.65 4.2875 8.7875L6.425 10.925C6.575 11.075 6.75 11.15 6.95 11.15C7.15 11.15 7.325 11.075 7.475 10.925L11.7125 6.6875C11.85 6.55 11.9188 6.375 11.9188 6.1625C11.9188 5.95 11.85 5.775 11.7125 5.6375C11.575 5.5 11.4 5.43125 11.1875 5.43125C10.975 5.43125 10.8 5.5 10.6625 5.6375L6.95 9.35ZM8 15.5C6.9625 15.5 5.9875 15.3031 5.075 14.9094C4.1625 14.5156 3.36875 13.9813 2.69375 13.3063C2.01875 12.6313 1.48438 11.8375 1.09063 10.925C0.696875 10.0125 0.5 9.0375 0.5 8C0.5 6.9625 0.696875 5.9875 1.09063 5.075C1.48438 4.1625 2.01875 3.36875 2.69375 2.69375C3.36875 2.01875 4.1625 1.48438 5.075 1.09063C5.9875 0.696875 6.9625 0.5 8 0.5C9.0375 0.5 10.0125 0.696875 10.925 1.09063C11.8375 1.48438 12.6313 2.01875 13.3063 2.69375C13.9813 3.36875 14.5156 4.1625 14.9094 5.075C15.3031 5.9875 15.5 6.9625 15.5 8C15.5 9.0375 15.3031 10.0125 14.9094 10.925C14.5156 11.8375 13.9813 12.6313 13.3063 13.3063C12.6313 13.9813 11.8375 14.5156 10.925 14.9094C10.0125 15.3031 9.0375 15.5 8 15.5ZM8 14C9.675 14 11.0938 13.4187 12.2563 12.2563C13.4187 11.0938 14 9.675 14 8C14 6.325 13.4187 4.90625 12.2563 3.74375C11.0938 2.58125 9.675 2 8 2C6.325 2 4.90625 2.58125 3.74375 3.74375C2.58125 4.90625 2 6.325 2 8C2 9.675 2.58125 11.0938 3.74375 12.2563C4.90625 13.4187 6.325 14 8 14Z" fill="white"/>
+</svg>
+ <span>APPLY</span></button>
+    </div>
+  </div></div>
     <div class="tab-panel"><h2>Agent Manager Configs</h2><p>Coming soon…</p></div>
     <div class="tab-panel"><h2>Advance Configs</h2><p>Coming soon…</p></div>
     <div class="tab-panel"><h2>Permissions</h2><p>Coming soon…</p></div>
