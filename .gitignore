@@ -47,3 +47,4 @@ htmlcov/
 *.log
 .tox/
 .pytest_cache/
+/Quantumsim_DjangoAdmin_Similarity_Implementation/staticfiles
