@@ -2,6 +2,7 @@ from uuid import UUID
 from django.contrib import admin
 from django.db.models import Q
 from .models import Agent, Label, PromptTemplate, SecretStore, Tool, UtilityTool, Persona
+from .widgets import UserTableWidget
 import csv
 import yaml
 from django.contrib import admin, messages
@@ -9,6 +10,7 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import path, reverse
 from django.http import HttpResponse
+from django import forms
 
 
 @admin.register(Agent)
@@ -295,10 +297,18 @@ class AgentAdmin(admin.ModelAdmin):
 
 
 
+class LabelAdminForm(forms.ModelForm):
+    class Meta:
+        model = Label
+        fields = '__all__'
+        widgets = {
+            'shared_with_users': UserTableWidget(),
+        }
+
 @admin.register(Label)
 class LabelAdmin(admin.ModelAdmin):
+    form = LabelAdminForm
     list_display = ("name", "description", "label_uuid")
-    search_fields = ("name", "description", "label_uuid")
     search_fields = ("name", "description", "agent_uuid")
     # list_filter = ("available_to_users", "system_default")  # native filters still work
     change_list_template = "admin/agentic_system/agent/change_list.html"
@@ -310,7 +320,7 @@ class LabelAdmin(admin.ModelAdmin):
             'fields': ('available_to_all_users', 'shared_with_users', 'shared_with_groups', 'shared_with_personas')
         }),
     )
-    filter_horizontal = ('shared_with_users', 'shared_with_groups', 'shared_with_personas')
+    filter_horizontal = ('shared_with_groups', 'shared_with_personas')
 
 
 @admin.register(PromptTemplate)
