@@ -1,7 +1,7 @@
 from uuid import UUID
 from django.contrib import admin
 from django.db.models import Q
-from .models import Agent, Label, PromptTemplate, SecretStore, Tool, UtilityTool
+from .models import Agent, Label, PromptTemplate, SecretStore, Tool, UtilityTool, Persona
 import csv
 import yaml
 from django.contrib import admin, messages
@@ -294,6 +294,7 @@ class AgentAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(reverse("admin:agentic_system_agent_changelist"))
 
 
+
 @admin.register(Label)
 class LabelAdmin(admin.ModelAdmin):
     list_display = ("name", "description", "label_uuid")
@@ -301,6 +302,15 @@ class LabelAdmin(admin.ModelAdmin):
     search_fields = ("name", "description", "agent_uuid")
     # list_filter = ("available_to_users", "system_default")  # native filters still work
     change_list_template = "admin/agentic_system/agent/change_list.html"
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'description')
+        }),
+        ('Sharing Options', {
+            'fields': ('available_to_all_users', 'shared_with_users', 'shared_with_groups', 'shared_with_personas')
+        }),
+    )
+    filter_horizontal = ('shared_with_users', 'shared_with_groups', 'shared_with_personas')
 
 
 @admin.register(PromptTemplate)
@@ -326,3 +336,9 @@ class ToolAdmin(admin.ModelAdmin):
 class UtilityToolAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name", "description")
+
+
+@admin.register(Persona)
+class PersonaAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)

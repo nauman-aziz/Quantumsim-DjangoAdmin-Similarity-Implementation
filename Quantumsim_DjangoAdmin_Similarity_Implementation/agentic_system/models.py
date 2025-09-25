@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.contrib.auth.models import User, Group
 
 
 class Agent(models.Model):
@@ -18,10 +19,27 @@ class Agent(models.Model):
         return self.name
 
 
+class Persona(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
 class Label(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     label_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    
+    shared_with_personas = models.ManyToManyField(Persona, blank=True, related_name="labels")
+    available_to_all_users = models.BooleanField(default=False)
+    
+    shared_with_users = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name="labels"
+    )
+    shared_with_groups = models.ManyToManyField(
+        Group,
+        blank=True,
+        related_name="labels"
+    )
 
     class Meta:
         verbose_name = "Label"
@@ -87,3 +105,5 @@ class UtilityTool(models.Model):
 
     def __str__(self):
         return self.name
+    
+
