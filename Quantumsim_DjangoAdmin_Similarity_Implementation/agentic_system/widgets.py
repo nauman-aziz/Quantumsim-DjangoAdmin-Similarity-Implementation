@@ -4,8 +4,6 @@ from django.utils.safestring import mark_safe
 
 
 class UserTableWidget(forms.Widget):
-    template_name = 'admin/widgets/user_table_widget.html'
-    
     def __init__(self, attrs=None):
         super().__init__(attrs)
         
@@ -53,13 +51,13 @@ class UserTableWidget(forms.Widget):
                         </tr>
             '''
         
-        html += '''
+        html += f'''
                     </tbody>
                 </table>
             </div>
         </div>
         
-        <div class="column-selector-panel" style="width: 300px; padding: 20px; background: #f8f9fa; border: 1px solid #ddd;">
+        <div class="column-selector-panel" style="width: 350px; padding: 20px; background: #f8f9fa; border: 1px solid #ddd;">
             <h3 style="margin: 0 0 15px 0; font-weight: 500; color: black;">Filters</h3>
             <div id="user-filters-container">
                 <div class="filter-row" style="display: flex; gap: 5px; margin-bottom: 10px; align-items: center;">
@@ -76,7 +74,7 @@ class UserTableWidget(forms.Widget):
                         <option value="empty">Is Empty</option>
                         <option value="not_empty">Not Empty</option>
                     </select>
-                    <input type="text" class="filter-value" placeholder="Value" style="padding: 4px; flex: 1;" />
+                    <input type="text" class="filter-value" placeholder="Value" style="padding: 4px; width: 80px; min-width: 60px;" />
                     <button type="button" class="add-filter-btn" style="padding: 4px 8px; background: #035289; color: white; border: none; cursor: pointer;">+</button>
                 </div>
             </div>
@@ -111,8 +109,9 @@ class UserTableWidget(forms.Widget):
             </div>
         </div>
     </div>
+        
         <script>
-        (function() {
+        (function() {{
             const selectAllCheckbox = document.getElementById('select-all-users');
             const userCheckboxes = document.querySelectorAll('.user-checkbox');
             const userRows = document.querySelectorAll('.user-row');
@@ -120,58 +119,56 @@ class UserTableWidget(forms.Widget):
             let activeFilters = [];
             
             // Column visibility
-            document.querySelectorAll('.column-toggle').forEach(toggle => {
-                toggle.addEventListener('change', function() {
+            document.querySelectorAll('.column-toggle').forEach(toggle => {{
+                toggle.addEventListener('change', function() {{
                     const column = this.dataset.column;
                     const isVisible = this.checked;
                     
                     // Toggle header
-                    const header = table.querySelector(`th[data-column="${column}"]`);
+                    const header = table.querySelector(`th[data-column="${{column}}"]`);
                     if (header) header.style.display = isVisible ? '' : 'none';
                     
                     // Toggle cells
-                    table.querySelectorAll(`td[data-column="${column}"]`).forEach(cell => {
+                    table.querySelectorAll(`td[data-column="${{column}}"]`).forEach(cell => {{
                         cell.style.display = isVisible ? '' : 'none';
-                    });
-                });
-            });
+                    }});
+                }});
+            }});
             
             // Select all columns
-            document.getElementById('select-all-columns').addEventListener('change', function() {
-                document.querySelectorAll('.column-toggle').forEach(toggle => {
+            document.getElementById('select-all-columns').addEventListener('change', function() {{
+                document.querySelectorAll('.column-toggle').forEach(toggle => {{
                     toggle.checked = this.checked;
                     toggle.dispatchEvent(new Event('change'));
-                });
-            });
+                }});
+            }});
             
             // Add filter
-            document.querySelector('.add-filter-btn').addEventListener('click', function() {
+            document.querySelector('.add-filter-btn').addEventListener('click', function() {{
                 const column = document.querySelector('.filter-column').value;
                 const operator = document.querySelector('.filter-operator').value;
                 const value = document.querySelector('.filter-value').value;
                 
-                if (column) {
-                    activeFilters.push({ column, operator, value });
+                if (column) {{
+                    activeFilters.push({{ column, operator, value }});
                     applyFilters();
-                    
-                    // Clear only value input
                     document.querySelector('.filter-value').value = '';
-                }
-            });
+                }}
+            }});
             
             // Apply filters
-            function applyFilters() {
-                userRows.forEach(row => {
+            function applyFilters() {{
+                userRows.forEach(row => {{
                     let visible = true;
                     
-                    activeFilters.forEach(filter => {
-                        const cell = row.querySelector(`td[data-column="${filter.column}"]`);
+                    activeFilters.forEach(filter => {{
+                        const cell = row.querySelector(`td[data-column="${{filter.column}}"]`);
                         if (!cell) return;
                         
                         const cellText = cell.textContent.toLowerCase();
                         const filterValue = filter.value.toLowerCase();
                         
-                        switch (filter.operator) {
+                        switch (filter.operator) {{
                             case 'include':
                                 if (filterValue && !cellText.includes(filterValue)) visible = false;
                                 break;
@@ -184,54 +181,54 @@ class UserTableWidget(forms.Widget):
                             case 'not_empty':
                                 if (cellText.trim() === '') visible = false;
                                 break;
-                        }
-                    });
+                        }}
+                    }});
                     
                     row.style.display = visible ? '' : 'none';
-                });
-            }
+                }});
+            }}
             
             // Reset filters
-            document.getElementById('reset-user-filters').addEventListener('click', function() {
+            document.getElementById('reset-user-filters').addEventListener('click', function() {{
                 activeFilters = [];
                 userRows.forEach(row => row.style.display = '');
                 document.querySelector('.filter-column').value = '';
                 document.querySelector('.filter-operator').value = 'include';
                 document.querySelector('.filter-value').value = '';
-            });
+            }});
             
-            // Apply button - adds current filter inputs to active filters
-            document.getElementById('apply-user-filters').addEventListener('click', function() {
+            // Apply button
+            document.getElementById('apply-user-filters').addEventListener('click', function() {{
                 const column = document.querySelector('.filter-column').value;
                 const operator = document.querySelector('.filter-operator').value;
                 const value = document.querySelector('.filter-value').value;
                 
-                if (column) {
-                    activeFilters.push({ column, operator, value });
+                if (column) {{
+                    activeFilters.push({{ column, operator, value }});
                     applyFilters();
-                }
-            });
+                }}
+            }});
             
             // Select all functionality
-            selectAllCheckbox.addEventListener('change', function() {
+            selectAllCheckbox.addEventListener('change', function() {{
                 const visibleCheckboxes = Array.from(userCheckboxes).filter(cb => 
                     cb.closest('.user-row').style.display !== 'none'
                 );
                 visibleCheckboxes.forEach(cb => cb.checked = this.checked);
-            });
+            }});
             
             // Update select all when individual checkboxes change
-            userCheckboxes.forEach(cb => {
-                cb.addEventListener('change', function() {
+            userCheckboxes.forEach(cb => {{
+                cb.addEventListener('change', function() {{
                     const visibleCheckboxes = Array.from(userCheckboxes).filter(cb => 
                         cb.closest('.user-row').style.display !== 'none'
                     );
                     const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
                     selectAllCheckbox.checked = checkedVisible.length === visibleCheckboxes.length;
                     selectAllCheckbox.indeterminate = checkedVisible.length > 0 && checkedVisible.length < visibleCheckboxes.length;
-                });
-            });
-        })();
+                }});
+            }});
+        }})();
         </script>
         '''
         
